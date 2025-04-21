@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
     "name": "Discord Clip Downloader Pro",
-    "version": "1.1",
-    "description": "Scans the current Discord channel for video clips and downloads them.",
+    "version": "1.3",
+    "description": "Scans the current Discord channel for video clips and allows individual or bulk downloads.",
     "permissions": [
       "downloads",
       "scripting",
@@ -15,7 +15,6 @@
     "action": {
       "default_title": "Download Discord Clips",
       "default_popup": "popup.html"
-   
     },
     "background": {
       "service_worker": "background.js"
