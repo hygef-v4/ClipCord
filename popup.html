@@ -15,14 +15,19 @@
             overflow-y: auto;
             padding-bottom: 0.5rem;
         }
+        /* Add some margin to the new input group */
+        .folder-input-group {
+            margin-top: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
         .status-area {
             min-height: 50px;
-            margin-top: 1rem;
+            /* margin-top: 1rem; */ /* Removed/Adjusted due to input group */
             margin-bottom: 1rem;
         }
         #videoListArea .list-group-item {
             padding: 0.5rem 0.75rem;
-            word-break: break-all; /* Prevent long URLs from overflowing badly */
+            word-break: break-all;
         }
          #videoListArea .clip-name {
             flex-grow: 1;
@@ -32,13 +37,12 @@
             white-space: nowrap;
         }
         #videoListArea .btn-download-single {
-            flex-shrink: 0; /* Prevent button from shrinking */
+            flex-shrink: 0;
         }
-        /* Style for the new Download All section */
         #downloadAllSection {
-            margin-top: 1rem; /* Space above the button */
-            padding-top: 0.5rem; /* Optional: Add padding if needed */
-            border-top: 1px solid #dee2e6; /* Optional: separator line */
+            margin-top: 1rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid #dee2e6;
         }
     </style>
 </head>
@@ -51,6 +55,14 @@
                 Scan Page for Clips
             </button>
         </div>
+
+        <!-- *** NEW Folder Name Input *** -->
+        <div class="folder-input-group">
+            <label for="folderNameInput" class="form-label mb-1" style="font-size: 0.9em;">Download Subfolder Name:</label>
+            <input type="text" class="form-control form-control-sm" id="folderNameInput" placeholder="DiscordClips">
+        </div>
+        <!-- *************************** -->
+
 
         <div id="statusArea" class="status-area text-center">
             <div id="spinner" class="spinner-border text-primary d-none" role="status">

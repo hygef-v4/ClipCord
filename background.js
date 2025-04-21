@@ -1,40 +1,66 @@
-// --- Helper: Generate Filename ---
-function generateFilename(url) {
-    let filename = `DiscordClips/clip-${Date.now()}.mp4`; // Secure default
+// --- Helper: Sanitize Folder Name ---
+// Removes potentially problematic characters for filenames/paths
+function sanitizeFolderName(name) {
+    if (!name || typeof name !== 'string') {
+        return 'InvalidFolderName'; // Fallback for non-strings
+    }
+    // Remove leading/trailing whitespace/dots/slashes
+    let sanitized = name.trim().replace(/^[./\\ ]+/, '').replace(/[./\\ ]+$/, '');
+    // Replace invalid characters with underscore
+    sanitized = sanitized.replace(/[<>:"/\\|?*~]/g, '_'); // Added ~ just in case
+    // Prevent ".." path traversal attempts (simple version)
+    sanitized = sanitized.replace(/\.\./g, '_');
+    // Limit length (optional)
+    const MAX_LEN = 50;
+    sanitized = sanitized.substring(0, MAX_LEN);
+    // Ensure it's not empty after sanitization
+    return sanitized || 'SanitizedFolderName';
+}
+
+
+// --- Helper: Generate Base Filename (Removed folder prefix) ---
+function generateBaseFilename(url) {
+    // Default base name
+    let baseFilename = `clip-${Date.now()}-${Math.random().toString(16).substring(2, 8)}`;
     try {
         const urlObj = new URL(url);
         const pathParts = urlObj.pathname.split('/');
-        let potentialFilename = pathParts.pop() || ''; // Ensure it's a string
-        // Remove query string first
-        potentialFilename = potentialFilename.split('?')[0];
+        let potentialFilename = pathParts.pop() || '';
+        potentialFilename = potentialFilename.split('?')[0]; // Remove query string
 
-        // Basic check for common video extensions - BE CAREFUL WITH REGEX
-        const seemsValid = potentialFilename.length > 3 && potentialFilename.includes('.') && !potentialFilename.startsWith('.');
-        // const seemsValid = /\.(mp4|webm|mov|avi|mkv|flv|wmv)$/i.test(potentialFilename); // Alternative stricter check
+        // Basic check for filename validity
+        const seemsValid = potentialFilename.length > 1 && potentialFilename.includes('.') && !potentialFilename.startsWith('.');
 
         if (potentialFilename && seemsValid) {
-            // Sanitize filename (replace invalid characters) - Decode first!
             const decoded = decodeURIComponent(potentialFilename);
-            const sanitized = decoded.replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, '_');
-             // Prevent excessively long filenames (optional)
-             const MAX_LEN = 100;
-             filename = `DiscordClips/${sanitized.substring(0, MAX_LEN)}`;
-        } else {
-             // Fallback if no valid name found in path
-             filename = `DiscordClips/clip-${Date.now()}-${Math.random().toString(16).substring(2, 8)}.mp4`;
+            // Sanitize the *filename part* (different from folder sanitization)
+            const sanitizedFilename = decoded.replace(/[<>:"/\\|?*]/g, '_');
+             // Limit length (optional)
+             const MAX_FILENAME_LEN = 100;
+             baseFilename = sanitizedFilename.substring(0, MAX_FILENAME_LEN);
         }
     } catch (e) {
-        console.warn("Could not parse URL for filename, using default:", url, e);
-        // Use the secure default already set
+        console.warn("Could not parse URL for base filename, using default:", url, e);
     }
-    // Ensure filename ends with a common video extension if possible, otherwise add .mp4
-    if (!/\.(mp4|webm|mov|avi|mkv|flv|wmv)$/i.test(filename)) {
-        filename += '.mp4';
+     // Ensure filename ends with a common video extension if possible, otherwise add .mp4
+    // Attempt to get extension from URL first
+    const urlMatch = url.match(/\.(mp4|webm|mkv|avi|mov|flv|wmv)(\?|$)/i);
+    if (urlMatch && urlMatch[1]) {
+        const detectedExt = `.${urlMatch[1].toLowerCase()}`;
+         if (!baseFilename.toLowerCase().endsWith(detectedExt)) {
+             // Remove existing incorrect extension if present before adding correct one
+             baseFilename = baseFilename.replace(/\.[^.]+$/, '') + detectedExt;
+         }
     }
-    return filename;
+    else if (!/\.(mp4|webm|mkv|avi|mov|flv|wmv)$/i.test(baseFilename)) {
+       baseFilename += '.mp4'; // Final fallback extension
+    }
+
+    return baseFilename;
 }
 
-// --- Listener for messages from Popup or Content Script ---
+
+// --- Listener for messages ---
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     console.log(`Background received message: ${msg.type}`, msg);
     let messageHandledAsync = false; // Flag to indicate if sendResponse will be called asynchronously
@@ -46,7 +72,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                 console.log(`Attempting to inject content script into tab ${targetTabId}`);
 
                 // Immediately acknowledge receipt before starting async operation
-                // This helps prevent the "port closed" error for the START_SCAN message itself.
                 sendResponse({ status: 'received' });
 
                 // Inject the content script
@@ -54,7 +79,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                     target: { tabId: targetTabId },
                     files: ['content-script.js']
                 }, (injectionResults) => {
-                    // This callback runs LATER, AFTER sendResponse for 'received' has been sent.
+                    // This callback runs LATER
                     if (chrome.runtime.lastError) {
                         console.error(`Script injection failed for tab ${targetTabId}:`, chrome.runtime.lastError.message);
                         // Send a *new* message to the popup indicating the error
@@ -62,19 +87,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                             .catch(e => console.log("Popup likely closed when sending SCAN_ERROR:", e.message));
                     } else {
                         console.log(`Content script injected successfully into tab ${targetTabId}. Waiting for results...`);
-                        // Success here just means injection started. Results come via 'DISCORD_CLIP_URLS'.
+                        // Success here just means injection started.
                     }
-                    // IMPORTANT: Do NOT call sendResponse here again for the original START_SCAN message.
+                    // Do NOT call sendResponse here again
                 });
 
-                // *** Crucial: Return true because executeScript's callback is asynchronous,
-                // and the overall process initiated by START_SCAN will result in a later
-                // message (SCAN_COMPLETE/SCAN_ERROR) being sent.
+                // Crucial: Return true because executeScript's callback is async
                 messageHandledAsync = true;
 
             } else {
                 console.error("START_SCAN message missing tabId");
-                // Send synchronous error response
                 sendResponse({ status: 'error', message: 'Missing tabId' });
                 messageHandledAsync = false; // Synchronous response sent
             }
@@ -89,8 +111,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             }).catch(error => {
                 console.log("Could not send SCAN_COMPLETE to popup (likely closed):", error.message);
             });
-            // No sendResponse needed here (message from content script, not popup requesting response)
-            // No need to return true
+            // No sendResponse needed here
             break;
 
         case 'CONTENT_SCRIPT_ERROR': // Message FROM content script
@@ -106,26 +127,29 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             break;
 
         case 'DOWNLOAD_SINGLE_URL': // Message FROM popup
-            if (msg.url) {
+            if (msg.url && typeof msg.folder === 'string') { // Check type of folder
                 const downloadUrl = msg.url;
-                const filename = generateFilename(downloadUrl);
-                console.log(`Initiating single download: ${downloadUrl} as ${filename}`);
+                const rawFolderName = msg.folder;
+                const sanitizedFolderName = sanitizeFolderName(rawFolderName); // Sanitize folder
+                const baseFilename = generateBaseFilename(downloadUrl);        // Get base name
+                const fullDownloadPath = `${sanitizedFolderName}/${baseFilename}`; // Combine path
+
+                console.log(`Initiating single download: ${downloadUrl} as ${fullDownloadPath}`);
                 try {
                     chrome.downloads.download({
                         url: downloadUrl,
-                        filename: filename,
+                        filename: fullDownloadPath, // Use combined path
                         conflictAction: 'uniquify'
                     }, (downloadId) => {
                         // This callback is asynchronous
                         if (chrome.runtime.lastError) {
-                            console.error(`Single download failed for ${filename}:`, chrome.runtime.lastError.message);
+                            console.error(`Single download failed for ${fullDownloadPath}:`, chrome.runtime.lastError.message);
                             sendResponse({ status: 'error', message: chrome.runtime.lastError.message });
                         } else if (downloadId !== undefined) { // Check if downloadId is defined (0 is valid)
                             console.log(`Single download ${downloadId} started successfully.`);
                             sendResponse({ status: 'success' });
                         } else {
-                            // This case might occur if the download is disallowed by policy, etc.
-                            console.error(`Single download failed for ${filename}: No downloadId returned and no error.`);
+                            console.error(`Single download failed for ${fullDownloadPath}: No downloadId returned and no error.`);
                             sendResponse({ status: 'error', message: 'Download initiation failed (no ID).' });
                         }
                     });
@@ -137,39 +161,42 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                     messageHandledAsync = false;
                 }
             } else {
-                console.error("DOWNLOAD_SINGLE_URL message missing URL");
-                sendResponse({ status: 'error', message: 'Missing URL' });
+                console.error("DOWNLOAD_SINGLE_URL message missing URL or Folder Name (or folder is not a string)");
+                sendResponse({ status: 'error', message: 'Missing URL or Invalid Folder Name' });
             }
             break;
 
         case 'DOWNLOAD_ALL_URLS': // Message FROM popup
-            if (msg.urls && Array.isArray(msg.urls) && msg.urls.length > 0) {
+            if (msg.urls && Array.isArray(msg.urls) && msg.urls.length > 0 && typeof msg.folder === 'string') { // Check folder type
                 const urlsToDownload = msg.urls;
+                const rawFolderName = msg.folder;
+                const sanitizedFolderName = sanitizeFolderName(rawFolderName); // Sanitize once
                 let initiatedCount = 0;
                 let errorCount = 0;
-                console.log(`Initiating bulk download for ${urlsToDownload.length} URLs.`);
+                console.log(`Initiating bulk download for ${urlsToDownload.length} URLs into folder "${sanitizedFolderName}".`);
 
                 urlsToDownload.forEach((url, index) => {
-                    if (!url) {
-                        console.warn(`Skipping invalid URL at index ${index}`);
+                    if (!url || typeof url !== 'string') {
+                        console.warn(`Skipping invalid URL at index ${index}:`, url);
                         errorCount++;
                         return; // Skip this iteration
                     }
                     try {
-                        const filename = generateFilename(url);
+                        const baseFilename = generateBaseFilename(url); // Get base name
+                        const fullDownloadPath = `${sanitizedFolderName}/${baseFilename}`; // Combine path
                          // Fire and forget for simplicity in bulk downloads
                         chrome.downloads.download({
                             url: url,
-                            filename: filename,
+                            filename: fullDownloadPath, // Use combined path
                             conflictAction: 'uniquify'
                         }, (downloadId) => {
                             // Optional: Log individual start/fail within the loop's async callback
                              if (chrome.runtime.lastError) {
-                                console.warn(`Bulk download item failed (${filename}): ${chrome.runtime.lastError.message}`);
+                                console.warn(`Bulk download item failed (${fullDownloadPath}): ${chrome.runtime.lastError.message}`);
                              } else if (downloadId !== undefined) {
                                 // console.log(`Bulk download item ${downloadId} started.`);
                              } else {
-                                 console.warn(`Bulk download item failed (${filename}): No ID/error.`);
+                                 console.warn(`Bulk download item failed (${fullDownloadPath}): No ID/error.`);
                              }
                         });
                         initiatedCount++;
@@ -189,8 +216,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                 messageHandledAsync = false; // Synchronous response sent after loop
 
             } else {
-                console.error("DOWNLOAD_ALL_URLS message missing or invalid URLs array");
-                sendResponse({ status: 'error', message: 'Invalid URLs provided.' });
+                console.error("DOWNLOAD_ALL_URLS message missing/invalid URLs array or Folder Name (or folder is not a string)");
+                sendResponse({ status: 'error', message: 'Invalid URLs array or Folder Name' });
             }
             break;
 
@@ -201,7 +228,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     // Return true IF any case set the async flag, otherwise return false/undefined.
-    // This tells Chrome to keep the message channel open for sendResponse in async callbacks.
     return messageHandledAsync;
 });
 
@@ -212,4 +238,4 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.runtime.onInstalled.addListener((details) => {
   console.log(`Extension installed/updated (${details.reason}). Version: ${chrome.runtime.getManifest().version}`);
 });
-console.log("Background service worker started (v1.4 - Async Fix).");
+console.log("Background service worker started (v1.6 - Custom Folder).");

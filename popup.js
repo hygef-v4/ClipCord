@@ -7,6 +7,7 @@ const videoListArea = document.getElementById('videoListArea');
 const downloadAllSection = document.getElementById('downloadAllSection');
 const downloadAllButton = document.getElementById('downloadAllButton');
 const totalClipCountSpan = document.getElementById('totalClipCount');
+const folderNameInput = document.getElementById('folderNameInput'); // Input for folder name
 
 let currentClipUrls = []; // Store the URLs found in the current scan
 
@@ -35,7 +36,8 @@ function resetUI() {
     downloadAllSection.classList.add('d-none'); // Hide Download All section
     downloadAllButton.disabled = false; // Re-enable button
     totalClipCountSpan.textContent = '0'; // Reset count in button text
-    downloadAllButton.textContent = `Download All Clips (${totalClipCountSpan.textContent})`; // Reset text
+    downloadAllButton.textContent = `Download All Clips (0)`; // Reset text
+    // Do not reset folderNameInput value, let it persist
     currentClipUrls = []; // Clear stored URLs
     showStatus('Click \'Scan\' to find clips.', 'light');
 }
@@ -56,6 +58,13 @@ function getFilenameFromUrl(url) {
     return fallback || 'unknown_clip'; // Ensure it returns something
 }
 
+// Helper to get the folder name safely
+function getTargetFolderName() {
+    const folderName = folderNameInput.value.trim();
+    // Use the placeholder value ("DiscordClips") as the default if input is empty
+    return folderName || folderNameInput.placeholder || 'DiscordClips';
+}
+
 // --- Event Handlers ---
 
 // Handles click on an individual download button
@@ -71,7 +80,14 @@ function handleIndividualDownload(event) {
     button.disabled = true;
     button.textContent = 'Starting...';
 
-    chrome.runtime.sendMessage({ type: 'DOWNLOAD_SINGLE_URL', url: urlToDownload }, (response) => {
+    const targetFolder = getTargetFolderName(); // Get folder name from input
+
+    // Send folder name in the message
+    chrome.runtime.sendMessage({
+        type: 'DOWNLOAD_SINGLE_URL',
+        url: urlToDownload,
+        folder: targetFolder // Add folder to message
+    }, (response) => {
         if (chrome.runtime.lastError) {
             // Handle cases where the background script might have issues sending response
             console.error("Error receiving response for DOWNLOAD_SINGLE_URL:", chrome.runtime.lastError.message);
@@ -89,7 +105,7 @@ function handleIndividualDownload(event) {
             button.classList.remove('btn-success');
             button.classList.add('btn-danger');
         }
-        // Note: Button state shows final status (Done/Failed/Error)
+        // Button state shows final status
     });
 }
 
@@ -107,7 +123,14 @@ downloadAllButton.addEventListener('click', () => {
     // Disable individual buttons as well
     videoListArea.querySelectorAll('.btn-download-single').forEach(btn => btn.disabled = true);
 
-    chrome.runtime.sendMessage({ type: 'DOWNLOAD_ALL_URLS', urls: currentClipUrls }, (response) => {
+    const targetFolder = getTargetFolderName(); // Get folder name from input
+
+    // Send folder name in the message
+    chrome.runtime.sendMessage({
+        type: 'DOWNLOAD_ALL_URLS',
+        urls: currentClipUrls,
+        folder: targetFolder // Add folder to message
+     }, (response) => {
          if (chrome.runtime.lastError) {
             console.error("Error receiving response for DOWNLOAD_ALL_URLS:", chrome.runtime.lastError.message);
             showStatus(`Error starting downloads: ${chrome.runtime.lastError.message}`, 'danger');
@@ -182,6 +205,8 @@ scanButton.addEventListener('click', async () => {
             } else {
                 // Unexpected response
                 console.warn("Unexpected response to START_SCAN:", response);
+                 // Still might be scanning, but log warning. Do not reset UI yet.
+                 showStatus('Scan initiated, waiting for results...', 'info', true);
             }
             // Actual scan results handled by the 'SCAN_COMPLETE' / 'SCAN_ERROR' message listener below
         });
@@ -261,4 +286,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // Initialize UI on popup open
 document.addEventListener('DOMContentLoaded', () => {
     resetUI();
+    // Initialize folder name input - could load from storage if implemented later
+    folderNameInput.placeholder = 'DiscordClips'; // Ensure placeholder is set
 });
