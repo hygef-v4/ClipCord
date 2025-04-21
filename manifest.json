@@ -1,0 +1,21 @@
+{
+    "manifest_version": 3,
+    "name": "Discord Clip Downloader",
+    "version": "1.0",
+    "permissions": [
+      "downloads",
+      "scripting",
+      "activeTab"
+    ],
+    "host_permissions": [
+      "https://discord.com/*",
+      "https://*.discord.com/*"
+    ],
+    "action": {
+      "default_title": "Download Discord Clips"
+    },
+    "background": {
+      "service_worker": "background.js"
+    }
+  }
+  
