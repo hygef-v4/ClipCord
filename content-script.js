@@ -1,131 +1,101 @@
-// Wrap in an async IIFE (Immediately Invoked Function Expression)
+// content-script.js
 (async () => {
-    console.log("Discord Clip Downloader: Content script activated.");
-
-    // Function to send messages back to the background script
-    function sendMessage(message) {
-        try {
-            // Content scripts don't expect responses, so just send.
-            chrome.runtime.sendMessage(message);
-        } catch (error) {
-            // This might happen if the extension context is invalidated (e.g., update/reload)
-            console.error("Content Script: Failed to send message:", error);
-        }
+    console.log("📥 Discord Clip Downloader: content script started");
+  
+    function sendMessage(msg) {
+      try {
+        chrome.runtime.sendMessage(msg);
+      } catch (err) {
+        console.error("✖️ Failed to send message:", err);
+      }
     }
-
+  
     try {
-        // 1) Find Discord’s message‐scroll container
-        const container = document.querySelector('div[class^="scrollerInner-"] > div[class^="messagesWrapper-"]') // Primary target
-                       || document.querySelector('main div[class^="scroller-"]') // Alt layout
-                       || document.querySelector('div[class*="chatContent-"]') // Another possible container
-                       || document.querySelector('[aria-label*="Messages"]') // Accessibility fallback
-                       || document.scrollingElement; // Last resort
-
-        if (!container) {
-             throw new Error('Could not find a suitable scrollable message container.');
+      // 1) Find the scroll container
+      const container =
+        document.querySelector('div[class^="scrollerInner-"] > div[class^="messagesWrapper-"]') ||
+        document.querySelector('main div[class^="scroller-"]') ||
+        document.querySelector('div[class*="chatContent-"]') ||
+        document.querySelector('[aria-label*="Messages"]') ||
+        document.scrollingElement;
+  
+      if (!container) {
+        throw new Error("Could not find a scrollable Discord message container.");
+      }
+      console.log("✅ Scroll container:", container);
+  
+      // 2) Scroll through it to lazy‑load everything
+      const pause = ms => new Promise(res => setTimeout(res, ms));
+      const step = window.innerHeight * 0.8;      // scroll by 80% of viewport
+      let lastY = -1, stuckCount = 0;
+  
+      while (true) {
+        // collect in each iteration (so we don't miss anything mid‑scroll)
+        container.scrollTo(0, container.scrollTop + step);
+        await pause(400);
+  
+        // break if we've reached the bottom or we can't scroll further
+        const newY = container.scrollTop;
+        if (newY === lastY) {
+          stuckCount++;
+          if (stuckCount >= 4) break;
+        } else {
+          stuckCount = 0;
         }
-         if (container === document.scrollingElement) {
-             console.warn('Using document scroll. This might be less reliable for finding all clips.');
-         }
-
-        console.log("Scroll container found:", container);
-
-        // --- Scrolling and Scraping Logic ---
-        const urls = new Set();
-        const step = window.innerHeight * 0.8; // Scroll slightly less than full height
-        const pauseMs = 450; // Time in milliseconds to wait for content loading after scroll
-        const pause = ms => new Promise(r => setTimeout(r, ms));
-        const maxScrollAttempts = 5; // Max attempts if scroll position doesn't change
-        let lastScrollTop = -1;
-        let attempts = 0;
-
-        console.log("Starting scroll...");
-        container.scrollTo({ top: 0, behavior: 'instant' }); // Start at the top
-        await pause(500); // Initial pause
-
-        let currentScrollHeight = container.scrollHeight;
-        let currentScrollTop = container.scrollTop;
-
-        // Scroll loop
-        while (true) {
-            // Collect videos in the current view first
-             document.querySelectorAll('video').forEach(v => {
-                const sourceSrc = v.querySelector('source')?.src;
-                const videoSrc = v.src;
-                const src = sourceSrc || videoSrc;
-                if (src && (src.startsWith('http:') || src.startsWith('https:') || src.startsWith('blob:'))) {
-                    urls.add(src);
-                }
-            });
-
-            // Scroll down
-            lastScrollTop = container.scrollTop;
-            container.scrollTo(0, lastScrollTop + step);
-            await pause(pauseMs);
-
-            currentScrollTop = container.scrollTop;
-            currentScrollHeight = container.scrollHeight; // Update height after potential loading
-
-            console.log(`Scrolled to: ${Math.round(currentScrollTop)} / ${currentScrollHeight}, Found URLs: ${urls.size}`);
-
-            // Check termination conditions
-            const isAtBottom = currentScrollTop + container.clientHeight >= currentScrollHeight - 20; // Generous tolerance for bottom
-            const stuck = Math.abs(currentScrollTop - lastScrollTop) < 10; // Didn't scroll much
-
-            if (isAtBottom) {
-                 console.log("Reached approximate bottom.");
-                 await pause(pauseMs); // Final pause at bottom
-                 // Final collection pass
-                  document.querySelectorAll('video').forEach(v => {
-                     const sourceSrc = v.querySelector('source')?.src;
-                     const videoSrc = v.src;
-                     const src = sourceSrc || videoSrc;
-                      if (src && (src.startsWith('http:') || src.startsWith('https:'))) {
-                         urls.add(src);
-                     }
-                  });
-                 break; // Exit loop
-            }
-
-            if (stuck) {
-                attempts++;
-                console.log(`Scroll position seems stuck, attempt ${attempts}/${maxScrollAttempts}`);
-                if (attempts >= maxScrollAttempts) {
-                    console.warn("Scroll position stuck. Assuming end of loadable content or issue.");
-                     // Collect one last time before breaking
-                     document.querySelectorAll('video').forEach(v => {
-                        const sourceSrc = v.querySelector('source')?.src;
-                        const videoSrc = v.src;
-                        const src = sourceSrc || videoSrc;
-                         if (src && (src.startsWith('http:') || src.startsWith('https:'))) {
-                            urls.add(src);
-                        }
-                     });
-                    break; // Exit loop if stuck
-                }
-            } else {
-                attempts = 0; // Reset attempts if scroll moved
-            }
-        } // End while loop
-
-        // Scroll back up smoothly (optional, good UX)
-        console.log("Scrolling back to top...");
-        container.scrollTo({ top: 0, behavior: 'smooth' });
-
-        console.log(`Finished scanning. Found ${urls.size} unique video URLs.`);
-
-        // 3) Send the list of URLs back to the background script
-        sendMessage({
-            type: 'DISCORD_CLIP_URLS',
-            urls: Array.from(urls)
+        lastY = newY;
+        if (newY + container.clientHeight >= container.scrollHeight - 10) {
+          console.log("▶️ Reached bottom of scroll");
+          break;
+        }
+      }
+  
+      // optional: scroll back up for neatness
+      container.scrollTo({ top: 0, behavior: "auto" });
+  
+      // 3) Scrape URLs
+      const urls = new Set();
+  
+      // 3a) Inline <video> URLs (mp4/webm)
+      document.querySelectorAll("video").forEach(v => {
+        const src = v.src || v.querySelector("source")?.src;
+        if (src) urls.add(src);
+      });
+  
+      // 3b) All “Download” anchors (covers mkv, avi, etc)
+      document
+        .querySelectorAll('a[aria-label^="Download"]')
+        .forEach(a => {
+          if (a.href) urls.add(a.href);
         });
-
-    } catch (error) {
-        console.error('Content Script Error:', error);
-        // Send error details back to the background script
-        sendMessage({
-            type: 'CONTENT_SCRIPT_ERROR',
-            message: error.message || 'An unknown error occurred in the content script.'
+  
+      // 3c) Any attachment URL ending in a video extension
+      document
+        .querySelectorAll('a[href*="cdn.discordapp.com/attachments/"]')
+        .forEach(a => {
+          const u = a.href;
+          if (/\.(mp4|webm|mkv|avi|mov)$/i.test(u)) {
+            urls.add(u);
+          }
         });
+  
+      if (urls.size === 0) {
+        alert("⚠️ No video clips found on this page.");
+        return;
+      }
+  
+      console.log(`📥 Found ${urls.size} clip URLs`);
+      sendMessage({
+        type: "DISCORD_CLIP_URLS",
+        urls: Array.from(urls)
+      });
     }
-})(); // Execute the async function
+    catch (err) {
+      console.error("🛑 Content script failed:", err);
+      alert("Error in clip‐scraper: " + err.message);
+      sendMessage({
+        type: "CONTENT_SCRIPT_ERROR",
+        message: err.message
+      });
+    }
+  })();
+  
