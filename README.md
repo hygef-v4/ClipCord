@@ -3,7 +3,10 @@
 ![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-1.3.0-blue)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
-![Downloads](https://img.shields.io/badge/downloads-1000+-yellowgreen)
+![Downloads](https://img.shields.io/badge/downloads-100+-yellowgreen)
+
+
+**ClipCord** is a lightweight Chrome extension that allows you to **scan and download video clips** from Discord channels easily. Quickly find, preview, and bulk download clips directly from your browser.
 
 ---
 
@@ -44,11 +47,3 @@ This project is licensed under the **MIT License**.
 See the [LICENSE](LICENSE) file for details.
 
 ---
-
-## Contributing
-
-Want to contribute? Awesome!  
-Feel free to fork the repository, create a new branch, and submit a pull request.
-
----
-
