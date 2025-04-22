@@ -1,6 +1,6 @@
 // content-script.js
 (async () => {
-  console.log("📥 Discord Clip Downloader: started");
+  console.log("Discord Clip Downloader: started");
 
   function sendMessage(msg) {
     chrome.runtime.sendMessage(msg);
@@ -53,15 +53,15 @@
       });
 
     if (urls.size === 0) {
-      alert("⚠️ No video clips found.");
+      alert("No video clips found.");
       return;
     }
 
-    console.log(`📥 Found ${urls.size} clips`);
+    console.log(`Found ${urls.size} clips`);
     sendMessage({ type: "DISCORD_CLIP_URLS", urls: Array.from(urls) });
   }
   catch (err) {
-    console.error("🛑 Error in content script:", err);
+    console.error("Error in content script:", err);
     alert("Error scanning clips:\n" + err.message);
     sendMessage({ type: "CONTENT_SCRIPT_ERROR", message: err.message });
   }

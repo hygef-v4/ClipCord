@@ -1,357 +1,266 @@
-// popup.js
+// popup.js (v1.7 - Persistence Aware)
 
 // --- Get DOM Elements ---
-const videoListContainer = document.getElementById("videoListContainer"); // Wrapper div
-const videoListArea = document.getElementById("videoListArea");       // Actual list container
-const loadingOverlay = document.getElementById("loadingOverlay");     // Blur overlay
+const videoListContainer = document.getElementById("videoListContainer");
+const videoListArea = document.getElementById("videoListArea");
+const loadingOverlay = document.getElementById("loadingOverlay");
 const downloadAllSection = document.getElementById("downloadAllSection");
 const totalClipCountSpan = document.getElementById("totalClipCount");
 const scanButton = document.getElementById("scanButton");
 const folderNameInput = document.getElementById("folderNameInput");
 const statusMessage = document.getElementById("statusMessage");
-const spinner = document.getElementById("spinner");                 // Spinner for the main scan button
-const downloadAllButton = document.getElementById("downloadAllButton"); // Download All button
+const spinner = document.getElementById("spinner");
+const downloadAllButton = document.getElementById("downloadAllButton");
 
 // --- State Variables ---
-let currentClipUrls = [];
-let revealTimeoutId = null; // To store the timeout ID for the overlay reveal
+let currentClipUrls = []; // Still useful for Download All button
+let revealTimeoutId = null;
+let currentTabId = null; // Store the active tab ID
 
-// --- Helper Functions ---
+// --- Helper Functions (getFilenameFromUrl, showStatus, getTargetFolderName, handleIndividualDownload - Unchanged) ---
+function getFilenameFromUrl(url) { /* ... same as before ... */
+    try {
+        const urlObj = new URL(url); const pathParts = urlObj.pathname.split("/");
+        let potentialFilename = pathParts.pop() || pathParts.pop();
+        return decodeURIComponent(potentialFilename?.split("?")[0]) || "unknown_clip";
+    } catch (e) { console.error("Error parsing URL:", url, e); return "unknown_clip"; }
+}
+function showStatus(message, type = "info", showScanSpinner = false) { /* ... same as before ... */
+    statusMessage.className = `alert alert-${type} mb-2`;
+    spinner.classList.toggle("d-none", !showScanSpinner);
+    statusMessage.textContent = message;
+    statusMessage.classList.toggle("d-none", showScanSpinner);
+}
+function getTargetFolderName() { /* ... same as before ... */
+    const folderName = folderNameInput.value.trim();
+    return folderName || folderNameInput.placeholder || "DiscordClips";
+}
+function handleIndividualDownload(event) { /* ... same as before ... */
+    const button = event.target.closest('button'); if (!button) return;
+    const urlToDownload = button.dataset.url; if (!urlToDownload) return;
+    button.disabled = true; button.textContent = "Starting...";
+    const targetFolder = getTargetFolderName();
+    chrome.runtime.sendMessage({ type: "DOWNLOAD_SINGLE_URL", url: urlToDownload, folder: targetFolder }, (response) => {
+        const currentButton = videoListArea.querySelector(`button[data-url="${urlToDownload}"]`); if (!currentButton) return;
+        if (response?.status === "success") {
+            currentButton.textContent = "Done"; currentButton.classList.replace("btn-success", "btn-secondary");
+        } else {
+            currentButton.textContent = "Failed"; currentButton.classList.replace("btn-success", "btn-danger");
+            currentButton.disabled = false; console.error("Download failed:", response?.error);
+        }
+    });
+}
 
 /**
- * Extracts a usable filename from a URL.
- * @param {string} url - The URL to parse.
- * @returns {string} A decoded filename or 'unknown_clip'.
+ * Resets the UI to its initial state, clearing lists and hiding sections.
  */
-function getFilenameFromUrl(url) {
-  try {
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split("/");
-    // Handle potential empty strings if URL ends with /
-    let potentialFilename = pathParts.pop() || pathParts.pop();
-    // Remove query parameters and decode
-    return decodeURIComponent(potentialFilename?.split("?")[0]) || "unknown_clip";
-  } catch (e) {
-    console.error("Error parsing URL:", url, e);
-    return "unknown_clip";
+function resetUI(showInitialMessage = true) { // Added parameter
+  console.log("Resetting UI");
+  clearTimeout(revealTimeoutId);
+  scanButton.disabled = false;
+  videoListArea.innerHTML = "";
+  videoListContainer.classList.add("d-none");
+  loadingOverlay.classList.remove("active");
+  downloadAllSection.classList.add("d-none");
+  if (downloadAllButton) downloadAllButton.disabled = false;
+  totalClipCountSpan.textContent = "0";
+  currentClipUrls = []; // Clear local URL store
+  if (showInitialMessage) {
+      showStatus("Click 'Scan' to find clips.", "light"); // Initial status message
   }
 }
 
 /**
- * Updates the status message area.
- * @param {string} message - The text message to display.
- * @param {string} [type='info'] - Bootstrap alert type (e.g., 'info', 'success', 'warning', 'danger').
- * @param {boolean} [showSpinner=false] - Whether to show the spinner *instead* of the text message.
+ * Populates the UI with a list of video URLs.
+ * @param {string[]} urls - Array of video URLs.
+ * @param {boolean} showOverlay - Whether to show the loading overlay (true for fresh scan, false for restore).
  */
-function showStatus(message, type = "info", showScanSpinner = false) {
-  statusMessage.className = `alert alert-${type} mb-2`; // Apply Bootstrap classes
+function populateUI(urls, showOverlay = false) {
+  console.log(`Populating UI with ${urls.length} URLs. Show overlay: ${showOverlay}`);
+  currentClipUrls = urls; // Store URLs locally for Download All
+  videoListArea.innerHTML = ""; // Clear previous items
 
-  // Control visibility of the main scan button's spinner
-  spinner.classList.toggle("d-none", !showScanSpinner);
+  if (urls.length === 0) {
+    resetUI(false); // Reset without initial message
+    showStatus("Scan found 0 clips.", "warning");
+    return;
+  }
 
-  // Set text content for the status message area
-  statusMessage.textContent = message;
+  // Use status to show building state, hide scan spinner
+  showStatus(`Building list for ${urls.length} clip(s)...`, "info", false);
 
-  // Show the status message area (unless the main scan spinner is active)
-  statusMessage.classList.toggle("d-none", showScanSpinner);
-}
+  const fragment = document.createDocumentFragment();
+  urls.forEach((url, index) => {
+    // --- Create List Item Elements (Same as before) ---
+    const listItem = document.createElement("div");
+    listItem.className = "list-group-item d-flex align-items-center justify-content-between p-2 flex-shrink-0";
+    // ... (rest of listItem creation: infoContainer, videoThumbnail, textSpan, downloadBtn) ...
+    const infoContainer = document.createElement('div'); infoContainer.className = "d-flex align-items-center me-2"; infoContainer.style.minWidth = '0'; infoContainer.style.flexGrow = '1';
+    const videoThumbnail = document.createElement("video"); videoThumbnail.src = url; videoThumbnail.width = 80; videoThumbnail.height = 45; videoThumbnail.muted = true; videoThumbnail.preload = "metadata"; videoThumbnail.style.marginRight = '10px'; videoThumbnail.style.flexShrink = '0'; videoThumbnail.style.objectFit = 'cover';
+    let playTimeout;
+    listItem.addEventListener("mouseenter", () => { if (!loadingOverlay.classList.contains('active') || !showOverlay) { videoThumbnail.currentTime = 0; videoThumbnail.play().catch((e) => {}); clearTimeout(playTimeout); playTimeout = setTimeout(() => videoThumbnail.pause(), 1500); } });
+    listItem.addEventListener("mouseleave", () => { if (!loadingOverlay.classList.contains('active') || !showOverlay) { clearTimeout(playTimeout); videoThumbnail.pause(); videoThumbnail.currentTime = 0; } });
+    const textSpan = document.createElement("span"); textSpan.className = "clip-name text-truncate"; textSpan.style.whiteSpace = 'nowrap'; textSpan.style.overflow = 'hidden'; textSpan.style.textOverflow = 'ellipsis'; const filename = getFilenameFromUrl(url); textSpan.textContent = filename; textSpan.title = filename;
+    const downloadBtn = document.createElement("button"); downloadBtn.className = "btn btn-success btn-sm btn-download-single ms-auto flex-shrink-0"; downloadBtn.textContent = "Download"; downloadBtn.dataset.url = url; downloadBtn.addEventListener("click", handleIndividualDownload);
+    infoContainer.appendChild(videoThumbnail); infoContainer.appendChild(textSpan); listItem.appendChild(infoContainer); listItem.appendChild(downloadBtn); fragment.appendChild(listItem);
+    // --- End List Item Creation ---
+  });
 
+  // 1. Add items to the list area
+  videoListArea.appendChild(fragment);
 
-/**
- * Resets the UI to its initial state.
- */
-function resetUI() {
-  clearTimeout(revealTimeoutId); // Clear any pending reveal timeout
-  scanButton.disabled = false;
-  videoListArea.innerHTML = ""; // Clear list items
-  videoListContainer.classList.add("d-none"); // Hide the list container (which includes list + overlay)
-  loadingOverlay.classList.remove("active"); // Ensure overlay is hidden/inactive
-  downloadAllSection.classList.add("d-none"); // Hide download all section
-  if (downloadAllButton) downloadAllButton.disabled = false; // Reset download all button
-  totalClipCountSpan.textContent = "0";
-  currentClipUrls = [];
-  showStatus("Click 'Scan' to find clips.", "light"); // Initial status message
-}
+  // 2. Make the container visible
+  videoListContainer.classList.remove("d-none");
 
-/**
- * Gets the target folder name for downloads from the input field.
- * @returns {string} The trimmed folder name or a default value.
- */
-function getTargetFolderName() {
-  const folderName = folderNameInput.value.trim();
-  // Use placeholder as default if input is empty
-  return folderName || folderNameInput.placeholder || "DiscordClips";
-}
+  // 3. Show download section and update count
+  downloadAllSection.classList.remove("d-none");
+  totalClipCountSpan.textContent = urls.length;
 
-/**
- * Handles the click event for individual download buttons.
- * @param {Event} event - The click event object.
- */
-function handleIndividualDownload(event) {
-  const button = event.target.closest('button'); // Get the button element
-  if (!button) return;
-
-  const urlToDownload = button.dataset.url;
-  if (!urlToDownload) return;
-
-  button.disabled = true;
-  button.textContent = "Starting..."; // Update button text
-  const targetFolder = getTargetFolderName();
-
-  chrome.runtime.sendMessage(
-    { type: "DOWNLOAD_SINGLE_URL", url: urlToDownload, folder: targetFolder },
-    (response) => {
-      // Check if the button still exists in the DOM (user might have rescanned)
-      const currentButton = videoListArea.querySelector(`button[data-url="${urlToDownload}"]`);
-      if (!currentButton) return; // Button is gone, do nothing
-
-      if (response?.status === "success") {
-        currentButton.textContent = "Done";
-        currentButton.classList.replace("btn-success", "btn-secondary");
-        // Button remains disabled to indicate completion
-      } else {
-        currentButton.textContent = "Failed";
-        currentButton.classList.replace("btn-success", "btn-danger");
-        currentButton.disabled = false; // Allow retry on failure
-        console.error("Download failed:", response?.error);
-        // Optionally show a more specific error message to the user
-      }
-    }
-  );
+  // 4. Handle Overlay & Final Status
+  if (showOverlay) {
+    loadingOverlay.classList.add("active"); // Show overlay for fresh scans
+    showStatus(`Loading ${urls.length} previews...`, "info", false);
+    const revealDelay = 4500; // Delay for fresh scans
+    clearTimeout(revealTimeoutId);
+    revealTimeoutId = setTimeout(() => {
+      loadingOverlay.classList.remove("active");
+      showStatus(`Loaded ${urls.length} clips. Ready!`, "success", false);
+      scanButton.disabled = false;
+      if (downloadAllButton) downloadAllButton.disabled = false;
+    }, revealDelay);
+  } else {
+    // No overlay needed (restoring state)
+    loadingOverlay.classList.remove("active"); // Ensure overlay is hidden
+    showStatus(`Restored ${urls.length} clips. Ready!`, "success", false);
+    scanButton.disabled = false; // Enable scan button immediately
+    if (downloadAllButton) downloadAllButton.disabled = false;
+  }
 }
 
 // --- Event Listeners ---
 
 /**
- * Scan Button Click Handler: Initiates the content script injection.
+ * Scan Button Click Handler: Tells background to start a *new* scan.
  */
-scanButton.addEventListener("click", async () => {
-  resetUI(); // Reset UI before starting
-  scanButton.disabled = true;
-  showStatus("Scanning page for clips...", "info", true); // Show spinner on scan button
-
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-    // Validate if the current tab is a Discord channel
-    if (!tab?.id || !tab.url || !tab.url.includes("discord.com/channels/")) {
-      showStatus("Error: Please navigate to a Discord channel page first.", "danger");
-      resetUI(); // Keep UI reset
-      scanButton.disabled = false; // Re-enable scan button
+scanButton.addEventListener("click", () => {
+  if (!currentTabId) {
+      showStatus("Could not get active tab ID.", "danger");
       return;
-    }
-
-    // Inject the content script
-    chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['content-script.js'] // Make sure this filename matches your content script
-    }, (injectionResults) => {
-        if (chrome.runtime.lastError || !injectionResults || injectionResults.length === 0) {
-            // Handle injection failure
-            console.error("Script injection failed:", chrome.runtime.lastError);
-            showStatus(`Error injecting script: ${chrome.runtime.lastError?.message || 'Unknown error'}`, "danger");
-            resetUI();
-            scanButton.disabled = false; // Re-enable scan button on injection failure
-        } else {
-            // Script injected successfully. The message listener below will handle the results.
-            console.log("Content script injected successfully. Waiting for results...");
-             // Status remains "Scanning page..." (set above)
-        }
-    });
-
-  } catch (error) {
-      // Handle errors during tab querying or other async operations
-      console.error("Error during scan initiation:", error);
-      showStatus(`Error: ${error.message}`, "danger");
-      resetUI();
-      scanButton.disabled = false;
   }
+  // Reset UI visually *before* sending message for responsiveness
+  resetUI(false); // Reset without the initial 'click scan' message
+  scanButton.disabled = true;
+  showStatus("Starting scan...", "info", true); // Show spinner
+
+  // Tell background to start scan (it will clear its cache first)
+  chrome.runtime.sendMessage({ type: "START_SCAN", tabId: currentTabId });
+  // We don't need to handle response here, status will be updated by other messages
 });
 
 /**
- * Message Listener: Handles messages from background or content scripts.
+ * Message Listener: Handles messages FROM background script.
  */
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  console.log("Popup received message:", msg.type); // Log message type for debugging
+  console.log("Popup received message:", msg.type);
 
   switch (msg.type) {
-    case "DISCORD_CLIP_URLS":
-      clearTimeout(revealTimeoutId); // Clear any previous reveal timeout
-      const urls = msg.urls;
-      currentClipUrls = urls; // Store URLs globally in the popup scope
-      videoListArea.innerHTML = ""; // Clear previous results
-
-      if (urls.length > 0) {
-        // Update status - building list (scan button spinner can be hidden now)
-        showStatus(`Found ${urls.length} clip(s). Building list...`, "info", false);
-
-        const fragment = document.createDocumentFragment(); // Use fragment for performance
-
-        urls.forEach((url, index) => {
-          // Create list item elements
-          const listItem = document.createElement("div");
-          listItem.className = "list-group-item d-flex align-items-center justify-content-between p-2 flex-shrink-0";
-
-          const infoContainer = document.createElement('div');
-          infoContainer.className = "d-flex align-items-center me-2";
-          infoContainer.style.minWidth = '0';
-          infoContainer.style.flexGrow = '1';
-
-          const videoThumbnail = document.createElement("video");
-          videoThumbnail.src = url;
-          videoThumbnail.width = 80;
-          videoThumbnail.height = 45;
-          videoThumbnail.muted = true;
-          videoThumbnail.preload = "metadata"; // Crucial for performance
-          videoThumbnail.style.marginRight = '10px';
-          videoThumbnail.style.flexShrink = '0';
-          videoThumbnail.style.objectFit = 'cover'; // Make video cover the area
-
-          // Hover play/pause logic (only active when overlay is hidden)
-          let playTimeout;
-          listItem.addEventListener("mouseenter", () => {
-            if (!loadingOverlay.classList.contains('active')) { // Check if overlay is inactive
-              videoThumbnail.currentTime = 0;
-              videoThumbnail.play().catch((e) => { /* Ignore harmless play errors */ });
-              clearTimeout(playTimeout);
-              playTimeout = setTimeout(() => videoThumbnail.pause(), 1500);
-            }
-          });
-          listItem.addEventListener("mouseleave", () => {
-            if (!loadingOverlay.classList.contains('active')) { // Check if overlay is inactive
-              clearTimeout(playTimeout);
-              videoThumbnail.pause();
-              videoThumbnail.currentTime = 0;
-            }
-          });
-
-          const textSpan = document.createElement("span");
-          textSpan.className = "clip-name text-truncate"; // Enable truncation
-          textSpan.style.whiteSpace = 'nowrap';
-          textSpan.style.overflow = 'hidden';
-          textSpan.style.textOverflow = 'ellipsis';
-          const filename = getFilenameFromUrl(url);
-          textSpan.textContent = filename;
-          textSpan.title = filename; // Show full name on hover
-
-          const downloadBtn = document.createElement("button");
-          downloadBtn.className = "btn btn-success btn-sm btn-download-single ms-auto flex-shrink-0";
-          downloadBtn.textContent = "Download";
-          downloadBtn.dataset.url = url;
-          downloadBtn.addEventListener("click", handleIndividualDownload);
-
-          // Append elements to the list item structure
-          infoContainer.appendChild(videoThumbnail);
-          infoContainer.appendChild(textSpan);
-          listItem.appendChild(infoContainer);
-          listItem.appendChild(downloadBtn);
-
-          // Append the completed list item to the fragment
-          fragment.appendChild(listItem);
-        });
-
-        // --- UI Update and Overlay Logic ---
-        // 1. Add all items at once to the DOM
-        videoListArea.appendChild(fragment);
-
-        // 2. Make the list container visible (it holds the list and the overlay)
-        videoListContainer.classList.remove("d-none");
-
-        // 3. Activate the loading overlay (makes it visible, blurred, and blocks clicks)
-        loadingOverlay.classList.add("active");
-
-        // 4. Show the 'Download All' section and update the total count
-        downloadAllSection.classList.remove("d-none");
-        totalClipCountSpan.textContent = urls.length;
-
-        // 5. Update status to indicate previews are loading behind the overlay
-        showStatus(`Loading ${urls.length} previews...`, "info", false);
-
-        // 6. Set a timer to hide the overlay after a delay
-        const revealDelay = 4500; // 4.5 seconds delay (adjust as needed)
-        revealTimeoutId = setTimeout(() => {
-          loadingOverlay.classList.remove("active"); // Hide overlay (triggers CSS fade-out)
-          showStatus(`Loaded ${urls.length} clips. Ready!`, "success", false); // Final success status
-          scanButton.disabled = false; // Re-enable scan button
-          if (downloadAllButton) downloadAllButton.disabled = false; // Ensure download all button is enabled
-        }, revealDelay);
-
-      } else {
-        // Case: Scan finished, but 0 URLs found
-        showStatus("Scan complete. No video clips found on the page.", "warning");
-        resetUI(); // Reset UI elements
-        scanButton.disabled = false; // Re-enable scan button
-      }
-      break; // End of DISCORD_CLIP_URLS case
-
-    case "NO_CLIPS_FOUND":
-      // Handle specific message from content script indicating no clips were found
-      showStatus("Scan complete. No video clips found on the page.", "warning");
-      resetUI();
-      scanButton.disabled = false;
+    case "SCAN_COMPLETE": // Received results (fresh scan) from background
+      populateUI(msg.urls, true); // Show overlay for fresh results
       break;
 
-    case "CONTENT_SCRIPT_ERROR":
-      // Handle errors reported by the content script during its execution
-      showStatus(`Error during scan: ${msg.message || 'Unknown content script error'}`, "danger");
-      resetUI();
-      scanButton.disabled = false;
+    case "SCAN_ERROR": // Received error from background (injection or content script)
+      showStatus(`Error: ${msg.message || 'Unknown scan error'}`, "danger");
+      resetUI(false); // Reset without initial msg
+      scanButton.disabled = false; // Re-enable scan button on error
       break;
 
-    // Add cases for other message types if needed (e.g., download progress)
-    // default:
-    //   console.log("Unhandled message type:", msg.type);
+    case "SCAN_STARTED": // Optional: Background confirms injection started
+        showStatus("Scanning page for clips...", "info", true); // Ensure spinner stays
+        break;
+
+    // Note: NO_CLIPS_FOUND/CONTENT_SCRIPT_ERROR are now handled via SCAN_COMPLETE/SCAN_ERROR
+    // Add other message type handlers if needed
   }
-
-  // Return true to indicate you might send a response asynchronously.
-  // This is important if any part of your message handler uses async operations
-  // or relies on callbacks like the one in `handleIndividualDownload`.
-  return true;
+  // Return true if you might use sendResponse asynchronously (not needed here currently)
+  // return true;
 });
 
-
 /**
- * Download All Button Click Handler
+ * Download All Button Click Handler (remains the same)
  */
-if (downloadAllButton) {
+if (downloadAllButton) { /* ... same as before ... */
     downloadAllButton.addEventListener("click", () => {
-        if (currentClipUrls.length === 0) {
-            showStatus("No clips to download.", "warning");
-            return;
-        }
-
-        // Disable button immediately
-        downloadAllButton.disabled = true;
-        downloadAllButton.textContent = `Starting ${currentClipUrls.length}...`;
+        if (currentClipUrls.length === 0) { showStatus("No clips to download.", "warning"); return; }
+        downloadAllButton.disabled = true; downloadAllButton.textContent = `Starting ${currentClipUrls.length}...`;
         showStatus(`Initiating download of ${currentClipUrls.length} clips...`, "info");
-
         const targetFolder = getTargetFolderName();
-
-        // Send message to background script to handle downloads
-        chrome.runtime.sendMessage(
-            { type: "DOWNLOAD_ALL_URLS", urls: currentClipUrls, folder: targetFolder },
-            (response) => {
-                // Re-enable button regardless of success/failure for potential retry
-                downloadAllButton.disabled = false;
-                downloadAllButton.textContent = "Download All";
-
-                if (response?.status === "success") {
-                    showStatus(`Download started for ${currentClipUrls.length} clips. Check browser downloads.`, "success");
-                     // Optionally update individual buttons visually
-                     videoListArea.querySelectorAll('.btn-download-single.btn-success').forEach(btn => {
-                        btn.textContent = "Done";
-                        btn.classList.replace("btn-success", "btn-secondary");
-                        btn.disabled = true; // Mark as done
-                     });
-                } else {
-                    showStatus(`Failed to start 'Download All': ${response?.error || 'Unknown error'}`, "danger");
-                }
+        chrome.runtime.sendMessage({ type: "DOWNLOAD_ALL_URLS", urls: currentClipUrls, folder: targetFolder }, (response) => {
+            downloadAllButton.disabled = false; downloadAllButton.textContent = "Download All";
+            if (response?.status === "success") {
+                showStatus(`Download started for ${response.count || currentClipUrls.length} clips. Check browser downloads.`, "success");
+                videoListArea.querySelectorAll('.btn-download-single.btn-success').forEach(btn => { btn.textContent = "Done"; btn.classList.replace("btn-success", "btn-secondary"); btn.disabled = true; });
+            } else {
+                showStatus(`Failed to start 'Download All': ${response?.error || 'Unknown error'}`, "danger");
             }
-        );
+        });
     });
 }
 
+// --- Initialisation ---
+/**
+ * Function to run when the popup opens. Checks for stored state.
+ */
+async function initializePopup() {
+  console.log("Initializing popup...");
+  let tab;
+  try {
+       [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  } catch (e) {
+       console.error("Error querying tabs:", e);
+       resetUI(false);
+       showStatus("Error accessing tabs.", "danger");
+       return;
+  }
 
-// --- Initial Setup ---
-// Reset the UI when the popup opens
-resetUI();
+
+  if (!tab?.id || !tab.url) {
+      console.error("Could not get active tab info.");
+      resetUI(false);
+      showStatus("Cannot access current tab info.", "danger");
+      return;
+  }
+
+  currentTabId = tab.id; // Store tab ID for scan button
+
+  // Check if it's a valid Discord page before asking for results
+  if (!tab.url.includes("discord.com/channels/")) {
+     console.log("Not a Discord channel page.");
+     resetUI(true); // Show normal initial message
+     // scanButton.disabled = true; // Optionally disable scan if not on discord
+     return;
+  }
+
+  console.log(`Requesting stored results for tab ${currentTabId}`);
+  // Ask background script for stored results for this tab
+  chrome.runtime.sendMessage({ type: "GET_RESULTS_FOR_TAB", tabId: currentTabId }, (response) => {
+    if (chrome.runtime.lastError){
+        // This often happens if the background script was updated/restarted
+        console.warn("Error requesting stored results (might be background restart):", chrome.runtime.lastError.message);
+        resetUI(true); // Start fresh if communication failed
+        return;
+    }
+
+    if (response?.status === "found" && response.data?.urls) {
+      console.log("Found stored results. Populating UI without overlay.");
+      // Found valid stored data, populate UI without overlay
+      populateUI(response.data.urls, false);
+    } else {
+      console.log(`No valid stored results found (Status: ${response?.status}, Reason: ${response?.reason}). Resetting UI.`);
+      // No stored data or it's stale, reset to initial state
+      resetUI(true); // Show 'Click Scan' message
+    }
+  });
+}
+
+// Run initialization when the popup DOM is loaded
+document.addEventListener('DOMContentLoaded', initializePopup);
