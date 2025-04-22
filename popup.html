@@ -1,405 +1,488 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Discord Clip Downloader</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
     <!-- Embedded Custom CSS -->
     <style>
-        /* CSS Variables */
-        :root {
-            --discord-blurple: #5865F2;
-            --discord-green: #3BA55D;
-            --discord-greyple: #99aab5;
-            --discord-dark: #2c2f33;
-            --discord-darker: #23272a;
-            --light-grey: #f6f7f8;
-            --border-color: #e0e2e8;
-            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.08);
-            --border-radius: 8px;
-            --footer-height: 2.7rem; /* Approximate height for padding calc */
-        }
+      /* CSS Variables */
+      :root {
+        --discord-blurple: #5865f2;
+        --discord-green: #3ba55d;
+        --discord-greyple: #99aab5;
+        --discord-dark: #2c2f33;
+        --discord-darker: #23272a;
+        --light-grey: #f6f7f8;
+        --border-color: #e0e2e8;
+        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.08);
+        --border-radius: 8px;
+        --footer-height: 2.7rem; /* Approximate height for padding calc */
+      }
 
-        /* General Body & Font Styling */
-        body {
-            min-width: 390px;
-            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            color: var(--discord-dark);
-            background: linear-gradient(170deg, #f8faff 0%, #ffffff 100%);
-            /* REMOVED overflow: hidden; to allow popup itself to scroll if needed */
-            line-height: 1.5;
-        }
+      /* General Body & Font Styling */
+      body {
+        min-width: 390px;
+        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
+          "Helvetica Neue", sans-serif;
+        color: var(--discord-dark);
+        background: linear-gradient(170deg, #f8faff 0%, #ffffff 100%);
+        /* REMOVED overflow: hidden; to allow popup itself to scroll if needed */
+        line-height: 1.5;
+      }
 
-        .popup-container {
-            padding: 1.25rem;
-            padding-bottom: calc(var(--footer-height) + 1rem); /* Space for fixed footer */
-        }
+      .popup-container {
+        padding: 1.25rem;
+        padding-bottom: calc(
+          var(--footer-height) + 1rem
+        ); /* Space for fixed footer */
+      }
 
-        .main-title {
-            color: var(--discord-blurple);
-            font-weight: 700;
-            font-size: 1.3rem;
-            margin-bottom: 1.5rem !important;
-            letter-spacing: -0.5px;
-        }
+      .main-title {
+        color: var(--discord-blurple);
+        font-weight: 700;
+        font-size: 1.3rem;
+        margin-bottom: 1.5rem !important;
+        letter-spacing: -0.5px;
+      }
 
-        /* Folder Input Label */
-        .folder-label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #555;
-            margin-bottom: 0.4rem;
-        }
-        #folderNameInput {
-            border-radius: var(--border-radius);
-            border-color: var(--border-color);
-            box-shadow: var(--shadow-sm);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        #folderNameInput:focus {
-            border-color: var(--discord-blurple);
-            box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.15);
-        }
+      /* Folder Input Label */
+      .folder-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 0.4rem;
+      }
+      #folderNameInput {
+        border-radius: var(--border-radius);
+        border-color: var(--border-color);
+        box-shadow: var(--shadow-sm);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      #folderNameInput:focus {
+        border-color: var(--discord-blurple);
+        box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.15);
+      }
 
-        /* Base Button Styling */
-        .btn {
-            border-radius: var(--border-radius);
-            padding: 0.6rem 1rem;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.2s ease-in-out;
-            border: none;
-            box-shadow: var(--shadow-sm);
-            letter-spacing: 0.2px;
-        }
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
-        }
-        .btn:active {
-            transform: translateY(0px);
-            box-shadow: var(--shadow-sm);
-        }
-        .btn .spinner-border {
-            width: 1.1em;
-            height: 1.1em;
-            border-width: 0.15em;
-        }
+      /* Base Button Styling */
+      .btn {
+        border-radius: var(--border-radius);
+        padding: 0.6rem 1rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.2s ease-in-out;
+        border: none;
+        box-shadow: var(--shadow-sm);
+        letter-spacing: 0.2px;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+      }
+      .btn:active {
+        transform: translateY(0px);
+        box-shadow: var(--shadow-sm);
+      }
+      .btn .spinner-border {
+        width: 1.1em;
+        height: 1.1em;
+        border-width: 0.15em;
+      }
 
-        /* Scan Button Styling */
-        .btn-scan {
-            background: linear-gradient(45deg, var(--discord-blurple), #6a79f5);
-            color: white;
-        }
-        .btn-scan:hover {
-            background: linear-gradient(45deg, #4a58d9, #5865f2);
-            color: white;
-        }
-        .btn-scan .button-text {
-            margin-left: 6px;
-        }
+      /* Scan Button Styling */
+      .btn-scan {
+        background: linear-gradient(45deg, var(--discord-blurple), #6a79f5);
+        color: white;
+      }
+      .btn-scan:hover {
+        background: linear-gradient(45deg, #4a58d9, #5865f2);
+        color: white;
+      }
+      .btn-scan .button-text {
+        margin-left: 6px;
+      }
 
-        /* Download All Button */
-        #downloadAllButton {
-             background: linear-gradient(45deg, var(--discord-green), #4cc77d);
-             color: white;
-        }
-         #downloadAllButton:hover {
-             background: linear-gradient(45deg, #339152, #3ba55d);
-             color: white;
-         }
+      /* Download All Button */
+      #downloadAllButton {
+        background: linear-gradient(45deg, var(--discord-green), #4cc77d);
+        color: white;
+      }
+      #downloadAllButton:hover {
+        background: linear-gradient(45deg, #339152, #3ba55d);
+        color: white;
+      }
 
-        /* Status Message Styling */
-        .status-message {
-            font-size: 0.9rem;
-            text-align: center;
-            padding: 0.6rem 0.8rem;
-            border-radius: var(--border-radius);
-            border-width: 1px;
-            border-style: solid;
-            background-color: var(--light-grey);
-            border-color: var(--border-color);
-        }
-        .status-message.alert-success {
-             background-color: #e6f6ec;
-             border-color: #a7d8b8;
-             color: #2a6a41;
-        }
-        .status-message.alert-info {
-            background-color: #e7f3fe;
-            border-color: #afd5fb;
-            color: #326ca3;
-        }
-         .status-message.alert-warning {
-            background-color: #fff8e6;
-            border-color: #ffe5a6;
-            color: #8d6f2c;
-        }
-        .status-message.alert-danger {
-            background-color: #fdecea;
-            border-color: #f5b1b0;
-            color: #a03938;
-        }
+      /* Status Message Styling */
+      .status-message {
+        font-size: 0.9rem;
+        text-align: center;
+        padding: 0.6rem 0.8rem;
+        border-radius: var(--border-radius);
+        border-width: 1px;
+        border-style: solid;
+        background-color: var(--light-grey);
+        border-color: var(--border-color);
+      }
+      .status-message.alert-success {
+        background-color: #e6f6ec;
+        border-color: #a7d8b8;
+        color: #2a6a41;
+      }
+      .status-message.alert-info {
+        background-color: #e7f3fe;
+        border-color: #afd5fb;
+        color: #326ca3;
+      }
+      .status-message.alert-warning {
+        background-color: #fff8e6;
+        border-color: #ffe5a6;
+        color: #8d6f2c;
+      }
+      .status-message.alert-danger {
+        background-color: #fdecea;
+        border-color: #f5b1b0;
+        color: #a03938;
+      }
 
-        /* Download All Section Styling */
-        .download-all-box {
-            margin-top: 1rem;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            border: none;
-            border-radius: var(--border-radius);
-            background-color: #ffffff;
-            box-shadow: var(--shadow-md);
-        }
-        .clip-count-text {
-            font-size: 0.95rem;
-            color: #555;
-            font-weight: 500;
-        }
-        .clip-count-text strong {
-            color: var(--discord-blurple);
-            font-weight: 700;
-        }
+      /* Download All Section Styling */
+      .download-all-box {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        border: none;
+        border-radius: var(--border-radius);
+        background-color: #ffffff;
+        box-shadow: var(--shadow-md);
+      }
+      .clip-count-text {
+        font-size: 0.95rem;
+        color: #555;
+        font-weight: 500;
+      }
+      .clip-count-text strong {
+        color: var(--discord-blurple);
+        font-weight: 700;
+      }
 
-        /* Video List Container */
-        #videoListContainer {
-            position: relative; /* Keep for overlay */
-            min-height: 50px;
-            margin-top: 1.25rem;
-            border: none;
-            border-radius: var(--border-radius);
-            overflow: hidden; /* Keep for overlay */
-            background-color: #ffffff;
-            box-shadow: var(--shadow-md);
-        }
+      /* Video List Container */
+      #videoListContainer {
+        position: relative; /* Keep for overlay */
+        min-height: 50px;
+        margin-top: 1.25rem;
+        border: none;
+        border-radius: var(--border-radius);
+        overflow: hidden; /* Keep for overlay */
+        background-color: #ffffff;
+        box-shadow: var(--shadow-md);
+      }
 
-        /* --- MODIFIED: Video List Scroll Area --- */
-        .video-list-scroll {
-            /* REMOVED max-height to allow expansion */
-            /* REMOVED overflow-y: auto to disable internal scroll */
-            overflow-x: hidden; /* Explicitly hide horizontal scroll */
-            /* Scrollbar styling below might affect the *browser's* scrollbar
+      /* --- MODIFIED: Video List Scroll Area --- */
+      .video-list-scroll {
+        /* REMOVED max-height to allow expansion */
+        /* REMOVED overflow-y: auto to disable internal scroll */
+        overflow-x: hidden; /* Explicitly hide horizontal scroll */
+        /* Scrollbar styling below might affect the *browser's* scrollbar
                if the *entire popup* becomes too tall, but won't apply
                to this element anymore as it won't scroll internally. */
-        }
-        .video-list-scroll::-webkit-scrollbar {
-            width: 8px;
-        }
-        .video-list-scroll::-webkit-scrollbar-track {
-            background: var(--light-grey);
-            border-radius: 10px;
-        }
-        .video-list-scroll::-webkit-scrollbar-thumb {
-            background-color: var(--discord-greyple);
-            border-radius: 10px;
-            border: 2px solid var(--light-grey);
-        }
-        .video-list-scroll::-webkit-scrollbar-thumb:hover {
-            background-color: #7f8ea3;
-        }
-        /* --- END MODIFICATION --- */
+      }
+      .video-list-scroll::-webkit-scrollbar {
+        width: 8px;
+      }
+      .video-list-scroll::-webkit-scrollbar-track {
+        background: var(--light-grey);
+        border-radius: 10px;
+      }
+      .video-list-scroll::-webkit-scrollbar-thumb {
+        background-color: var(--discord-greyple);
+        border-radius: 10px;
+        border: 2px solid var(--light-grey);
+      }
+      .video-list-scroll::-webkit-scrollbar-thumb:hover {
+        background-color: #7f8ea3;
+      }
+      /* --- END MODIFICATION --- */
 
+      /* Individual Video List Item Styling */
+      .list-group-item {
+        border: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.75rem 1.1rem;
+        transition: background-color 0.15s ease-in-out,
+          transform 0.15s ease-in-out;
+        background-color: #ffffff;
+      }
+      .list-group-item:last-child {
+        border-bottom: none;
+      }
+      .list-group-item:hover {
+        background-color: #f8faff;
+        cursor: pointer;
+        transform: translateX(2px);
+      }
 
-        /* Individual Video List Item Styling */
-        .list-group-item {
-            border: none;
-            border-bottom: 1px solid var(--border-color);
-            padding: 0.75rem 1.1rem;
-            transition: background-color 0.15s ease-in-out, transform 0.15s ease-in-out;
-            background-color: #ffffff;
-        }
-        .list-group-item:last-child {
-            border-bottom: none;
-        }
-        .list-group-item:hover {
-            background-color: #f8faff;
-            cursor: pointer;
-            transform: translateX(2px);
-        }
+      /* Video Thumbnail Styling */
+      .list-group-item video {
+        flex-shrink: 0;
+        object-fit: cover;
+        border-radius: 6px;
+        border: none;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease;
+        /* Background color added via JS */
+      }
+      .list-group-item:hover video {
+        transform: scale(1.05);
+      }
 
-        /* Video Thumbnail Styling */
-        .list-group-item video {
-            flex-shrink: 0;
-            object-fit: cover;
-            border-radius: 6px;
-            border: none;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            transition: transform 0.2s ease;
-            /* Background color added via JS */
-        }
-        .list-group-item:hover video {
-            transform: scale(1.05);
-        }
+      /* Clip Filename Styling */
+      .clip-name {
+        margin-left: 1rem;
+        flex-grow: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--discord-dark);
+        vertical-align: middle;
+      }
 
-        /* Clip Filename Styling */
-        .clip-name {
-            margin-left: 1rem;
-            flex-grow: 1;
-            min-width: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--discord-dark);
-            vertical-align: middle;
-        }
+      /* Individual Download Button */
+      .btn-download-single {
+        background: linear-gradient(45deg, var(--discord-green), #4cc77d);
+        color: white;
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+      }
+      .btn-download-single:hover {
+        background: linear-gradient(45deg, #339152, #3ba55d);
+        color: white;
+      }
+      .btn-download-single.btn-secondary {
+        background: var(--discord-greyple);
+        opacity: 0.8;
+        cursor: default;
+        box-shadow: none;
+        transform: none;
+      }
+      .btn-download-single.btn-danger {
+        background: #d9534f;
+      }
+      .btn-download-single:hover:disabled {
+        transform: none;
+        box-shadow: var(--shadow-sm);
+      }
 
-        /* Individual Download Button */
-        .btn-download-single {
-             background: linear-gradient(45deg, var(--discord-green), #4cc77d);
-             color: white;
-             font-size: 0.85rem;
-             padding: 0.4rem 0.8rem;
-        }
-        .btn-download-single:hover {
-             background: linear-gradient(45deg, #339152, #3ba55d);
-             color: white;
-        }
-        .btn-download-single.btn-secondary {
-            background: var(--discord-greyple);
-            opacity: 0.8;
-            cursor: default;
-            box-shadow: none;
-            transform: none;
-        }
-        .btn-download-single.btn-danger {
-            background: #d9534f;
-        }
-        .btn-download-single:hover:disabled {
-             transform: none;
-             box-shadow: var(--shadow-sm);
-        }
+      /* Loading Overlay Styling */
+      #loadingOverlay {
+        position: absolute; /* Still absolute relative to videoListContainer */
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(248, 250, 255, 0.9);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        z-index: 10;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease-in-out;
+        border-radius: var(--border-radius); /* Match container */
+      }
+      #loadingOverlay.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      #loadingOverlay .spinner-border {
+        width: 2.2rem;
+        height: 2.2rem;
+        color: var(--discord-blurple);
+      }
 
-        /* Loading Overlay Styling */
-        #loadingOverlay {
-            position: absolute; /* Still absolute relative to videoListContainer */
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(248, 250, 255, 0.9);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease-in-out;
-            border-radius: var(--border-radius); /* Match container */
-        }
-        #loadingOverlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        #loadingOverlay .spinner-border {
-            width: 2.2rem;
-            height: 2.2rem;
-            color: var(--discord-blurple);
-        }
+      /* --- Footer Styling --- */
+      .popup-footer {
+        position: fixed; /* Fix to viewport */
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 0.75rem 1.25rem; /* Adjust padding as needed */
+        background-color: #ffffff;
+        border-top: 1px solid var(--border-color);
+        text-align: center;
+        font-size: 0.8rem;
+        color: #6c757d;
+        box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.03);
+        z-index: 20; /* Ensure it's above other content if needed */
+      }
+      .popup-footer a {
+        color: var(--discord-blurple);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
+      }
+      .popup-footer a:hover {
+        color: #4a58d9;
+        text-decoration: underline;
+      }
+      .popup-footer .github-icon {
+        display: inline-block;
+        vertical-align: middle;
+        width: 1em;
+        height: 1em;
+        margin-left: 0.3em;
+        fill: currentColor;
+        transition: fill 0.2s ease;
+      }
+      .popup-footer a:hover .github-icon {
+        fill: #4a58d9;
+      }
 
-        /* --- Footer Styling --- */
-        .popup-footer {
-            position: fixed; /* Fix to viewport */
-            bottom: 0; left: 0;
-            width: 100%;
-            padding: 0.75rem 1.25rem; /* Adjust padding as needed */
-            background-color: #ffffff;
-            border-top: 1px solid var(--border-color);
-            text-align: center;
-            font-size: 0.8rem;
-            color: #6c757d;
-            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.03);
-            z-index: 20; /* Ensure it's above other content if needed */
-        }
-        .popup-footer a {
-            color: var(--discord-blurple);
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s ease;
-        }
-        .popup-footer a:hover {
-            color: #4a58d9;
-            text-decoration: underline;
-        }
-        .popup-footer .github-icon {
-            display: inline-block;
-            vertical-align: middle;
-            width: 1em; height: 1em;
-            margin-left: 0.3em;
-            fill: currentColor;
-            transition: fill 0.2s ease;
-        }
-        .popup-footer a:hover .github-icon {
-            fill: #4a58d9;
-        }
+      /* --- Rainbow Text Animation --- */
+      @keyframes rainbowText {
+        0% {
+          color: hsl(0, 85%, 55%);
+        } /* Red */
+        14% {
+          color: hsl(30, 85%, 55%);
+        } /* Orange */
+        28% {
+          color: hsl(60, 85%, 55%);
+        } /* Yellow */
+        42% {
+          color: hsl(120, 85%, 50%);
+        } /* Green */
+        57% {
+          color: hsl(180, 85%, 50%);
+        } /* Cyan */
+        71% {
+          color: hsl(240, 85%, 60%);
+        } /* Blue */
+        85% {
+          color: hsl(280, 85%, 60%);
+        } /* Violet */
+        100% {
+          color: hsl(360, 85%, 55%);
+        } /* Red (completes loop) */
+      }
+
+      .rainbow-text {
+        animation: rainbowText 6s linear infinite; /* Adjust 6s for speed */
+        /* Optional: Add slight boldness if desired */
+        /* font-weight: 500; */
+      }
+      /* --- End Rainbow Text Animation --- */
     </style>
-
-</head>
-<body>
+  </head>
+  <body>
     <!-- Container padding adjusted for footer -->
     <div class="container-fluid popup-container">
-        <h5 class="mb-3 text-center main-title">Discord Clip Downloader</h5>
+      <h5 class="mb-3 text-center main-title">Discord Clip Downloader</h5>
 
-        <!-- Folder Input Section -->
-        <div class="mb-3">
-             <label for="folderNameInput" class="form-label folder-label">Download Folder Name:</label>
-             <input type="text" class="form-control form-control-sm" id="folderNameInput" placeholder="DiscordClips">
-        </div>
+      <!-- Folder Input Section -->
+      <div class="mb-3">
+        <label for="folderNameInput" class="form-label folder-label"
+          >Download Folder Name:</label
+        >
+        <input
+          type="text"
+          class="form-control form-control-sm"
+          id="folderNameInput"
+          placeholder="DiscordClips"
+        />
+      </div>
 
-        <!-- Scan Button -->
-        <button id="scanButton" class="btn btn-scan w-100 mb-2">
-            <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-            <span class="button-text">Scan Current Channel</span>
+      <!-- Scan Button -->
+      <button id="scanButton" class="btn btn-scan w-100 mb-2">
+        <span
+          id="spinner"
+          class="spinner-border spinner-border-sm d-none"
+          role="status"
+          aria-hidden="true"
+        ></span>
+        <span class="button-text">Scan Current Channel</span>
+      </button>
+
+      <!-- Status Message Area -->
+      <div
+        id="statusMessage"
+        class="alert status-message mb-2 d-none"
+        role="alert"
+      >
+        Click 'Scan' to find clips.
+      </div>
+
+      <!-- Download All Section -->
+      <div id="downloadAllSection" class="d-none text-center download-all-box">
+        <p class="mb-2 clip-count-text">
+          Total Clips Found: <strong id="totalClipCount">0</strong>
+        </p>
+        <button id="downloadAllButton" class="btn w-100 btn-sm">
+          Download All
         </button>
+      </div>
 
-        <!-- Status Message Area -->
-        <div id="statusMessage" class="alert status-message mb-2 d-none" role="alert">
-            Click 'Scan' to find clips.
+      <!-- Video List Area with Overlay -->
+      <div id="videoListContainer" class="d-none">
+        <!-- The List Itself (NO LONGER SCROLLS INTERNALLY) -->
+        <div id="videoListArea" class="list-group video-list-scroll">
+          <!-- Video items will be added here by JS -->
         </div>
-
-        <!-- Download All Section -->
-        <div id="downloadAllSection" class="d-none text-center download-all-box">
-            <p class="mb-2 clip-count-text">Total Clips Found: <strong id="totalClipCount">0</strong></p>
-            <button id="downloadAllButton" class="btn w-100 btn-sm">Download All</button>
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading Previews...</span>
+          </div>
         </div>
-
-        <!-- Video List Area with Overlay -->
-        <div id="videoListContainer" class="d-none">
-            <!-- The List Itself (NO LONGER SCROLLS INTERNALLY) -->
-            <div id="videoListArea" class="list-group video-list-scroll">
-                <!-- Video items will be added here by JS -->
-            </div>
-            <!-- Loading Overlay -->
-            <div id="loadingOverlay">
-                 <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading Previews...</span>
-                 </div>
-            </div>
-        </div>
-
-    </div> <!-- End .popup-container (content area) -->
+      </div>
+    </div>
+    <!-- End .popup-container (content area) -->
 
     <!-- Footer Section -->
     <footer class="popup-footer">
-        Developed by chal7z
-        <a href="https://github.com/hygef-v4" target="_blank" rel="noopener noreferrer" title="View on GitHub">
-             <svg class="github-icon" viewBox="0 0 16 16" version="1.1" aria-hidden="true">
-                 <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-             </svg>
-        </a>
+      <span class="rainbow-text">Developed by chal7z</span>
+      <!-- Added span with class -->
+      <a
+        href="https://github.com/hygef-v4"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="View on GitHub"
+      >
+        <svg
+          class="github-icon"
+          viewBox="0 0 16 16"
+          version="1.1"
+          aria-hidden="true"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+          ></path>
+        </svg>
+      </a>
     </footer>
     <!-- End Footer Section -->
 
     <!-- Popup JavaScript -->
-    <script src="popup.js"></script> <!-- Ensure this points to your JS file -->
-</body>
+    <script src="popup.js"></script>
+    <!-- Ensure this points to your JS file -->
+  </body>
 </html>
