@@ -1,20 +1,14 @@
-// Get references to UI elements
-const scanVideoButton = document.getElementById('scanVideoButton');
-const scanImageButton = document.getElementById('scanImageButton');
+const scanButton = document.getElementById('scanButton');
 const statusArea = document.getElementById('statusArea');
 const spinner = document.getElementById('spinner');
 const statusMessage = document.getElementById('statusMessage');
-const mediaListArea = document.getElementById('mediaListArea');
+const videoListArea = document.getElementById('videoListArea');
 const downloadAllSection = document.getElementById('downloadAllSection');
 const downloadAllButton = document.getElementById('downloadAllButton');
 const totalClipCountSpan = document.getElementById('totalClipCount');
 const folderNameInput = document.getElementById('folderNameInput');
-const mediaTypeLabel = document.getElementById('mediaTypeLabel');
 
-let currentMediaUrls = [];
-let currentMediaType = "video"; // "video" or "image"
-
-// --- Helper Functions ---
+let currentClipUrls = [];
 
 function showStatus(message, type = 'info', showSpinner = false) {
     statusMessage.classList.remove('alert-info', 'alert-success', 'alert-warning', 'alert-danger', 'alert-light', 'd-none');
@@ -32,17 +26,15 @@ function showStatus(message, type = 'info', showSpinner = false) {
 }
 
 function resetUI() {
-    scanVideoButton.disabled = false;
-    scanImageButton.disabled = false;
-    mediaListArea.innerHTML = '';
-    mediaListArea.classList.add('d-none');
+    scanButton.disabled = false;
+    videoListArea.innerHTML = '';
+    videoListArea.classList.add('d-none');
     downloadAllSection.classList.add('d-none');
     downloadAllButton.disabled = false;
     totalClipCountSpan.textContent = '0';
-    downloadAllButton.textContent = `Download All ${capitalize(currentMediaType)}s (0)`;
-    mediaTypeLabel.textContent = capitalize(currentMediaType) + "s";
-    currentMediaUrls = [];
-    showStatus('Click \'Scan\' to find videos or images.', 'light');
+    downloadAllButton.textContent = `Download All Clips (0)`;
+    currentClipUrls = [];
+    showStatus('Click \'Scan\' to find clips.', 'light');
 }
 
 function getFilenameFromUrl(url) {
@@ -55,19 +47,13 @@ function getFilenameFromUrl(url) {
         }
     } catch (e) {}
     const fallback = url.substring(url.lastIndexOf('/') + 1).split('?')[0];
-    return fallback || 'unknown_file';
+    return fallback || 'unknown_clip';
 }
 
 function getTargetFolderName() {
     const folderName = folderNameInput.value.trim();
     return folderName || folderNameInput.placeholder || 'DiscordClips';
 }
-
-function capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-// --- Event Handlers ---
 
 function handleIndividualDownload(event) {
     const button = event.target;
@@ -98,25 +84,25 @@ function handleIndividualDownload(event) {
 }
 
 downloadAllButton.addEventListener('click', () => {
-    if (currentMediaUrls.length === 0) {
-        showStatus(`No ${currentMediaType}s found to download.`, 'warning');
+    if (currentClipUrls.length === 0) {
+        showStatus('No clips found to download.', 'warning');
         return;
     }
     downloadAllButton.disabled = true;
     downloadAllButton.textContent = 'Starting All...';
-    showStatus(`Initiating download for ${currentMediaUrls.length} ${currentMediaType}s...`, 'info');
-    mediaListArea.querySelectorAll('.btn-download-single').forEach(btn => btn.disabled = true);
+    showStatus(`Initiating download for ${currentClipUrls.length} clips...`, 'info');
+    videoListArea.querySelectorAll('.btn-download-single').forEach(btn => btn.disabled = true);
     const targetFolder = getTargetFolderName();
     chrome.runtime.sendMessage({
         type: 'DOWNLOAD_ALL_URLS',
-        urls: currentMediaUrls,
+        urls: currentClipUrls,
         folder: targetFolder
      }, (response) => {
          if (chrome.runtime.lastError) {
             showStatus(`Error starting downloads: ${chrome.runtime.lastError.message}`, 'danger');
             downloadAllButton.disabled = false;
-            downloadAllButton.textContent = `Download All ${capitalize(currentMediaType)}s (${currentMediaUrls.length})`;
-            mediaListArea.querySelectorAll('.btn-download-single').forEach(btn => {
+            downloadAllButton.textContent = `Download All Clips (${currentClipUrls.length})`;
+            videoListArea.querySelectorAll('.btn-download-single').forEach(btn => {
                 if (!btn.classList.contains('btn-secondary') && !btn.classList.contains('btn-danger')) {
                    btn.disabled = false;
                 }
@@ -124,7 +110,7 @@ downloadAllButton.addEventListener('click', () => {
         } else if (response && response.status === 'success') {
             showStatus(`${response.count} downloads initiated! Check Chrome Downloads.`, 'success');
             downloadAllButton.textContent = 'Downloads Started';
-            mediaListArea.querySelectorAll('.btn-download-single').forEach(btn => {
+            videoListArea.querySelectorAll('.btn-download-single').forEach(btn => {
                 if (!btn.disabled) {
                    btn.textContent = 'Done';
                    btn.classList.remove('btn-success');
@@ -135,8 +121,8 @@ downloadAllButton.addEventListener('click', () => {
         } else {
             showStatus(`Failed to initiate all downloads: ${response?.message || 'Unknown error'}`, 'danger');
             downloadAllButton.disabled = false;
-            downloadAllButton.textContent = `Download All ${capitalize(currentMediaType)}s (${currentMediaUrls.length})`;
-            mediaListArea.querySelectorAll('.btn-download-single').forEach(btn => {
+            downloadAllButton.textContent = `Download All Clips (${currentClipUrls.length})`;
+            videoListArea.querySelectorAll('.btn-download-single').forEach(btn => {
                 if (!btn.classList.contains('btn-secondary') && !btn.classList.contains('btn-danger')) {
                    btn.disabled = false;
                 }
@@ -145,80 +131,86 @@ downloadAllButton.addEventListener('click', () => {
     });
 });
 
-scanVideoButton.addEventListener('click', () => startScan('video'));
-scanImageButton.addEventListener('click', () => startScan('image'));
-
-async function startScan(mediaType) {
+scanButton.addEventListener('click', async () => {
     resetUI();
-    currentMediaType = mediaType;
-    scanVideoButton.disabled = true;
-    scanImageButton.disabled = true;
-    showStatus(`Scanning page for ${mediaType}s...`, 'info', true);
+    scanButton.disabled = true;
+    showStatus('Scanning page...', 'info', true);
+
     try {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!tab || !tab.id) throw new Error('Could not find active tab.');
-        if (!tab.url || !(tab.url.startsWith('https://discord.com/channels/') || tab.url.startsWith('https://ptb.discord.com/channels/'))) {
-            throw new Error('Please navigate to a Discord channel or DM page.');
+        if (!tab || !tab.id) {
+            throw new Error('Could not find active tab.');
         }
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            files: ['content-script.js']
-        }, () => {
-            chrome.tabs.sendMessage(tab.id, { type: 'START_SCAN', scanType: mediaType }, (response) => {
-                scanVideoButton.disabled = false;
-                scanImageButton.disabled = false;
-                if (!response || response.status === "empty") {
-                    showStatus(`No ${mediaType}s found.`, 'warning');
-                } else if (response.status === "success") {
-                    displayMediaResults(response.urls, mediaType);
-                } else if (response.status === "error") {
-                    showStatus(`Error: ${response.message}`, 'danger');
-                }
-            });
+        if (!tab.url || !(tab.url.startsWith('https://discord.com/channels/') || tab.url.startsWith('https://ptb.discord.com/channels/'))) {
+             throw new Error('Please navigate to a Discord channel or DM page.');
+        }
+        chrome.runtime.sendMessage({ type: 'START_SCAN', tabId: tab.id }, (response) => {
+            if (chrome.runtime.lastError) {
+                showStatus(`Error initiating scan: ${chrome.runtime.lastError.message}`, 'danger');
+                resetUI();
+            } else if (response && response.status === 'error') {
+                showStatus(`Error: ${response.message}`, 'danger');
+                resetUI();
+            } else if (response && response.status === 'received') {
+                // Status remains "Scanning..."
+            } else {
+                showStatus('Scan initiated, waiting for results...', 'info', true);
+            }
         });
     } catch (error) {
         showStatus(`Error: ${error.message}`, 'danger');
-        scanVideoButton.disabled = false;
-        scanImageButton.disabled = false;
+        resetUI();
     }
-}
+});
 
-function displayMediaResults(urls, mediaType) {
-    currentMediaUrls = urls;
-    const count = urls.length;
-    mediaListArea.innerHTML = '';
-    if (count > 0) {
-        showStatus(`Found ${count} ${mediaType}${count > 1 ? 's' : ''}.`, 'success');
-        urls.forEach((url, index) => {
-            const listItem = document.createElement('div');
-            listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-            const textSpan = document.createElement('span');
-            textSpan.className = 'clip-name';
-            const filename = getFilenameFromUrl(url);
-            textSpan.textContent = `${capitalize(mediaType)} ${index + 1} (${filename.length > 25 ? filename.substring(0, 22) + '...' : filename})`;
-            textSpan.title = `${filename}\n${url}`;
-            const downloadBtn = document.createElement('button');
-            downloadBtn.className = 'btn btn-success btn-sm btn-download-single';
-            downloadBtn.textContent = 'Download';
-            downloadBtn.dataset.url = url;
-            downloadBtn.addEventListener('click', handleIndividualDownload);
-            listItem.appendChild(textSpan);
-            listItem.appendChild(downloadBtn);
-            mediaListArea.appendChild(listItem);
-        });
-        mediaListArea.classList.remove('d-none');
-        totalClipCountSpan.textContent = count;
-        downloadAllButton.textContent = `Download All ${capitalize(mediaType)}s (${count})`;
-        mediaTypeLabel.textContent = capitalize(mediaType) + "s";
-        downloadAllSection.classList.remove('d-none');
-        downloadAllButton.disabled = false;
-    } else {
-        showStatus(`No ${mediaType}s found on this page.`, 'warning');
-        mediaListArea.classList.add('d-none');
-        downloadAllSection.classList.add('d-none');
-        currentMediaUrls = [];
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    switch (msg.type) {
+        case 'SCAN_COMPLETE':
+            const urls = msg.urls;
+            currentClipUrls = urls;
+            const count = urls.length;
+            videoListArea.innerHTML = '';
+            if (count > 0) {
+                showStatus(`Found ${count} video clip(s).`, 'success');
+                urls.forEach((url, index) => {
+                    const listItem = document.createElement('div');
+                    listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'clip-name';
+                    const filename = getFilenameFromUrl(url);
+                    textSpan.textContent = `Clip ${index + 1} (${filename.length > 25 ? filename.substring(0, 22) + '...' : filename})`;
+                    textSpan.title = `${filename}\n${url}`;
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.className = 'btn btn-success btn-sm btn-download-single';
+                    downloadBtn.textContent = 'Download';
+                    downloadBtn.dataset.url = url;
+                    downloadBtn.addEventListener('click', handleIndividualDownload);
+                    listItem.appendChild(textSpan);
+                    listItem.appendChild(downloadBtn);
+                    videoListArea.appendChild(listItem);
+                });
+                videoListArea.classList.remove('d-none');
+                totalClipCountSpan.textContent = count;
+                downloadAllButton.textContent = `Download All Clips (${count})`;
+                downloadAllSection.classList.remove('d-none');
+                downloadAllButton.disabled = false;
+            } else {
+                showStatus('No video clips found on this page.', 'warning');
+                videoListArea.classList.add('d-none');
+                downloadAllSection.classList.add('d-none');
+                currentClipUrls = [];
+            }
+            scanButton.disabled = false;
+            break;
+        case 'SCAN_ERROR':
+             showStatus(`Error during scan: ${msg.message}`, 'danger');
+             resetUI();
+             break;
+        default:
+            break;
     }
-}
+    return false;
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     resetUI();

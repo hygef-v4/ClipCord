@@ -17,6 +17,7 @@ function sanitizeFolderName(name) {
     return sanitized || 'SanitizedFolderName';
 }
 
+
 // --- Helper: Generate Base Filename (Removed folder prefix) ---
 function generateBaseFilename(url) {
     // Default base name
@@ -34,26 +35,30 @@ function generateBaseFilename(url) {
             const decoded = decodeURIComponent(potentialFilename);
             // Sanitize the *filename part* (different from folder sanitization)
             const sanitizedFilename = decoded.replace(/[<>:"/\\|?*]/g, '_');
-            // Limit length (optional)
-            const MAX_FILENAME_LEN = 100;
-            baseFilename = sanitizedFilename.substring(0, MAX_FILENAME_LEN);
+             // Limit length (optional)
+             const MAX_FILENAME_LEN = 100;
+             baseFilename = sanitizedFilename.substring(0, MAX_FILENAME_LEN);
         }
     } catch (e) {
         console.warn("Could not parse URL for base filename, using default:", url, e);
     }
-    // Ensure filename ends with a common video or image extension if possible
-    const extMatch = url.match(/\.(mp4|webm|mkv|avi|mov|flv|wmv|png|jpe?g|gif|webp|bmp|svg)(\?|$)/i);
-    if (extMatch && extMatch[1]) {
-        const detectedExt = `.${extMatch[1].toLowerCase()}`;
-        if (!baseFilename.toLowerCase().endsWith(detectedExt)) {
-            baseFilename = baseFilename.replace(/\.[^.]+$/, '') + detectedExt;
-        }
-    } else if (!/\.(mp4|webm|mkv|avi|mov|flv|wmv|png|jpe?g|gif|webp|bmp|svg)$/i.test(baseFilename)) {
-        baseFilename += '.mp4'; // Final fallback extension (for unknown types)
+     // Ensure filename ends with a common video extension if possible, otherwise add .mp4
+    // Attempt to get extension from URL first
+    const urlMatch = url.match(/\.(mp4|webm|mkv|avi|mov|flv|wmv)(\?|$)/i);
+    if (urlMatch && urlMatch[1]) {
+        const detectedExt = `.${urlMatch[1].toLowerCase()}`;
+         if (!baseFilename.toLowerCase().endsWith(detectedExt)) {
+             // Remove existing incorrect extension if present before adding correct one
+             baseFilename = baseFilename.replace(/\.[^.]+$/, '') + detectedExt;
+         }
+    }
+    else if (!/\.(mp4|webm|mkv|avi|mov|flv|wmv)$/i.test(baseFilename)) {
+       baseFilename += '.mp4'; // Final fallback extension
     }
 
     return baseFilename;
 }
+
 
 // --- Listener for messages ---
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -111,11 +116,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
         case 'CONTENT_SCRIPT_ERROR': // Message FROM content script
             console.error("Error reported from content script:", msg.message);
-            // Forward the error to the popup
-            chrome.runtime.sendMessage({
-                type: 'SCAN_ERROR',
-                message: msg.message || 'Unknown error in content script.'
-            }).catch(error => {
+             // Forward the error to the popup
+             chrome.runtime.sendMessage({
+                 type: 'SCAN_ERROR',
+                 message: msg.message || 'Unknown error in content script.'
+             }).catch(error => {
                 console.log("Could not send SCAN_ERROR to popup (likely closed):", error.message);
             });
             // No sendResponse needed here
@@ -179,20 +184,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                     try {
                         const baseFilename = generateBaseFilename(url); // Get base name
                         const fullDownloadPath = `${sanitizedFolderName}/${baseFilename}`; // Combine path
-                        // Fire and forget for simplicity in bulk downloads
+                         // Fire and forget for simplicity in bulk downloads
                         chrome.downloads.download({
                             url: url,
                             filename: fullDownloadPath, // Use combined path
                             conflictAction: 'uniquify'
                         }, (downloadId) => {
                             // Optional: Log individual start/fail within the loop's async callback
-                            if (chrome.runtime.lastError) {
+                             if (chrome.runtime.lastError) {
                                 console.warn(`Bulk download item failed (${fullDownloadPath}): ${chrome.runtime.lastError.message}`);
-                            } else if (downloadId !== undefined) {
+                             } else if (downloadId !== undefined) {
                                 // console.log(`Bulk download item ${downloadId} started.`);
-                            } else {
-                                console.warn(`Bulk download item failed (${fullDownloadPath}): No ID/error.`);
-                            }
+                             } else {
+                                 console.warn(`Bulk download item failed (${fullDownloadPath}): No ID/error.`);
+                             }
                         });
                         initiatedCount++;
                     } catch (e) {
@@ -204,9 +209,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                 console.log(`Initiated ${initiatedCount} downloads, encountered ${errorCount} errors during initiation.`);
                 // Send a single response back immediately after *attempting* to initiate all.
                 if (initiatedCount > 0) {
-                    sendResponse({ status: 'success', count: initiatedCount });
+                     sendResponse({ status: 'success', count: initiatedCount });
                 } else {
-                    sendResponse({ status: 'error', message: `Failed to initiate any downloads (${errorCount} errors).` });
+                     sendResponse({ status: 'error', message: `Failed to initiate any downloads (${errorCount} errors).` });
                 }
                 messageHandledAsync = false; // Synchronous response sent after loop
 
@@ -217,9 +222,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             break;
 
         default:
-            console.log("Background received unhandled message type:", msg.type);
-            // Optional: sendResponse({ status: 'error', message: 'Unhandled message type' });
-            break;
+             console.log("Background received unhandled message type:", msg.type);
+             // Optional: sendResponse({ status: 'error', message: 'Unhandled message type' });
+             break;
     }
 
     // Return true IF any case set the async flag, otherwise return false/undefined.
