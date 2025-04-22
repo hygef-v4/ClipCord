@@ -1,12 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "Discord Clip Downloader Pro",
+  "name": "ClipCord - Discord Clip Downloader",
+  "short_name": "ClipCord",
   "version": "1.3",
   "description": "Scans the current Discord channel for video clips and allows individual or bulk downloads.",
   "permissions": [
     "downloads",
     "scripting",
-    "activeTab"
+    "activeTab",
+    "storage"
   ],
   "host_permissions": [
     "https://discord.com/*",
