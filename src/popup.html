@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClipCord</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Embedded Custom CSS -->
+    <style>
+      /* --- Base Variables (Light Mode) --- */
+      :root {
+        /* Discord Colors */
+        --discord-blurple: #5865f2;
+        --discord-green: #3ba55d;
+        --discord-greyple: #99aab5;
+        --discord-dark: #2c2f33;
+        --discord-darker: #23272a;
+
+        /* Light Theme Specific */
+        --bg-primary: linear-gradient(170deg, #f8faff 0%, #ffffff 100%);
+        --bg-secondary: #ffffff;
+        --bg-tertiary: #f8faff; /* Hover for lists etc */
+        --text-primary: #2c2f33; /* discord-dark */
+        --text-secondary: #555; /* Labels, footer, subtitles */
+        --text-tertiary: var(--discord-blurple); /* Title, strong text */
+        --text-link: var(--discord-blurple);
+        --text-link-hover: #4a58d9;
+        --border-color: #e0e2e8;
+        --shadow-color-rgb: 0, 0, 0; /* Black for shadows */
+        --shadow-opacity-sm: 0.05;
+        --shadow-opacity-md: 0.08;
+        --footer-bg: #ffffff;
+        --footer-text: #6c757d;
+        --footer-border: var(--border-color);
+        --input-bg: #ffffff;
+        --input-border: var(--border-color);
+        --input-focus-border: var(--discord-blurple);
+        --input-focus-shadow: rgba(88, 101, 242, 0.15);
+        --loading-overlay-bg: rgba(248, 250, 255, 0.9);
+        --scrollbar-track: #f1f1f1;
+        --scrollbar-thumb: var(--discord-greyple);
+        --scrollbar-thumb-hover: #7f8ea3;
+        --header-bg: var(--bg-secondary); /* Header background */
+        --header-border: var(--border-color); /* Header border */
+        --icon-button-color: var(--text-secondary); /* Header Icon Button Color */
+        --icon-button-hover-bg: var(--bg-tertiary); /* Header Icon Button Hover BG */
+        --icon-button-hover-color: var(--text-primary); /* Header Icon Button Hover Color */
+
+         /* Status Messages (Light) */
+        --status-bg-light: #f6f7f8;
+        --status-border-light: var(--border-color);
+        --status-text-light: var(--text-primary);
+        --status-bg-success: #e6f6ec;
+        --status-border-success: #a7d8b8;
+        --status-text-success: #2a6a41;
+        --status-bg-info: #e7f3fe;
+        --status-border-info: #afd5fb;
+        --status-text-info: #326ca3;
+        --status-bg-warning: #fff8e6;
+        --status-border-warning: #ffe5a6;
+        --status-text-warning: #8d6f2c;
+        --status-bg-danger: #fdecea;
+        --status-border-danger: #f5b1b0;
+        --status-text-danger: #a03938;
+
+        /* General */
+        --border-radius: 8px;
+        --footer-height: 2.7rem;
+
+        /* Shadows */
+        --shadow-sm: 0 2px 4px rgba(var(--shadow-color-rgb), var(--shadow-opacity-sm));
+        --shadow-md: 0 4px 10px rgba(var(--shadow-color-rgb), var(--shadow-opacity-md));
+        --footer-shadow: 0 -2px 5px rgba(var(--shadow-color-rgb), 0.03);
+
+        /* Transitions */
+        --transition-speed: 0.3s;
+        --transition-timing: ease;
+      }
+
+      /* --- Dark Mode Variables --- */
+      body.dark-mode {
+        --bg-primary: #2c2f33; /* discord-dark */
+        --bg-secondary: #23272a; /* discord-darker */
+        --bg-tertiary: #36393f; /* Slightly lighter dark for hover */
+        --text-primary: #dcddde; /* Discord light text */
+        --text-secondary: #b9bbbe; /* Discord muted text */
+        --text-tertiary: #7289da; /* Lighter Blurple for title/strong */
+        --text-link: #7289da;
+        --text-link-hover: var(--discord-blurple);
+        --border-color: #40444b; /* Darker border */
+        --shadow-color-rgb: 0, 0, 0;
+        --shadow-opacity-sm: 0.1; /* Slightly more visible shadows */
+        --shadow-opacity-md: 0.15;
+        --footer-bg: #23272a;
+        --footer-text: #99aab5; /* discord-greyple */
+        --footer-border: #40444b;
+        --input-bg: #36393f;
+        --input-border: #40444b;
+        --input-focus-border: var(--discord-blurple);
+        --input-focus-shadow: rgba(88, 101, 242, 0.25);
+        --loading-overlay-bg: rgba(35, 39, 42, 0.9); /* Darker overlay */
+        --scrollbar-track: #2c2f33;
+        --scrollbar-thumb: #4f545c;
+        --scrollbar-thumb-hover: #5d636b;
+        --header-bg: var(--bg-secondary);
+        --header-border: var(--border-color);
+        --icon-button-color: var(--text-secondary);
+        --icon-button-hover-bg: var(--bg-tertiary);
+        --icon-button-hover-color: var(--text-primary);
+
+         /* Status Messages (Dark) */
+        --status-bg-light: #36393f;
+        --status-border-light: var(--border-color);
+        --status-text-light: var(--text-primary);
+        --status-bg-success: #2a4d3e;
+        --status-border-success: #3fa55d;
+        --status-text-success: #a7e0b8;
+        --status-bg-info: #325c83;
+        --status-border-info: #589bed;
+        --status-text-info: #aed5fb;
+        --status-bg-warning: #6f5a2c;
+        --status-border-warning: #c7a04e;
+        --status-text-warning: #ffe5a6;
+        --status-bg-danger: #7a302f;
+        --status-border-danger: #d9534f;
+        --status-text-danger: #f5b1b0;
+
+        /* Shadows (Dark) */
+        --shadow-sm: 0 2px 4px rgba(var(--shadow-color-rgb), var(--shadow-opacity-sm));
+        --shadow-md: 0 4px 10px rgba(var(--shadow-color-rgb), var(--shadow-opacity-md));
+        --footer-shadow: 0 -2px 5px rgba(var(--shadow-color-rgb), 0.06);
+      }
+
+      /* --- Universal Transition --- */
+      * {
+         transition: background-color var(--transition-speed) var(--transition-timing),
+                     color var(--transition-speed) var(--transition-timing),
+                     border-color var(--transition-speed) var(--transition-timing),
+                     fill var(--transition-speed) var(--transition-timing);
+      }
+       body, .btn, .form-control, .list-group-item, .popup-footer, #loadingOverlay, .popup-header, .btn-icon {
+            transition: background-color var(--transition-speed) var(--transition-timing),
+                        color var(--transition-speed) var(--transition-timing),
+                        border-color var(--transition-speed) var(--transition-timing),
+                        box-shadow var(--transition-speed) var(--transition-timing),
+                        opacity var(--transition-speed) var(--transition-timing);
+       }
+       /* Exclude specific transitions where needed */
+       .btn:hover, .btn:active { transition: all 0.2s ease-in-out; }
+       .list-group-item {
+            transition: background-color var(--transition-speed) var(--transition-timing),
+                     border-color var(--transition-speed) var(--transition-timing),
+                     transform 0.15s ease-in-out; /* Keep transform transition separate */
+       }
+       .list-group-item:hover video { transition: transform 0.2s ease; }
+       #loadingOverlay { transition: opacity 0.4s ease-in-out, background-color var(--transition-speed) var(--transition-timing); }
+       .rainbow-text { animation: rainbowText 6s linear infinite; transition: none; }
+       .btn-icon { transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease; } /* Specific for icon buttons */
+
+      /* --- General Body & Font Styling --- */
+      body {
+        min-width: 390px;
+        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
+          "Helvetica Neue", sans-serif;
+        color: var(--text-primary);
+        background: var(--bg-primary);
+        line-height: 1.5;
+      }
+
+      /* --- Popup Header Styles --- */
+      .popup-header {
+          background-color: var(--header-bg);
+          padding: 0.6rem 1rem;
+          border-bottom: 1px solid var(--header-border);
+          position: sticky;
+          top: 0;
+          z-index: 15;
+      }
+      .header-icon {
+          width: 32px;
+          height: 32px;
+          border-radius: 4px;
+      }
+      .header-text {
+          line-height: 1.2;
+      }
+      .header-title {
+          font-weight: 600;
+          font-size: 1rem;
+          color: var(--text-primary);
+          margin-bottom: 0.1rem;
+      }
+      .header-subtitle {
+          font-size: 0.75rem;
+          color: var(--text-secondary);
+      }
+
+      /* --- Popup Container & Content Area --- */
+      .popup-container {
+         padding: 0; /* Remove padding from the main container */
+         padding-bottom: calc(var(--footer-height) + 1rem); /* Keep bottom padding for footer */
+         position: relative;
+      }
+      .popup-content {
+          padding: 1.25rem; /* Apply padding to the content area */
+      }
+
+      /* --- Icon Button Styles --- */
+      .btn-icon {
+        padding: 0.35rem 0.5rem;
+        border-radius: 50%;
+        background-color: transparent;
+        border: none;
+        color: var(--icon-button-color);
+        box-shadow: none !important;
+        line-height: 1;
+        margin-left: 0.25rem;
+      }
+      .btn-icon:hover {
+        background-color: var(--icon-button-hover-bg);
+        color: var(--icon-button-hover-color);
+        transform: none;
+      }
+      .btn-icon:active {
+        transform: scale(0.95);
+      }
+      .btn-icon svg {
+        width: 1em;
+        height: 1em;
+        vertical-align: middle;
+        fill: currentColor;
+      }
+      #themeToggle { /* Just in case, ensure it's not absolute */
+          position: static;
+      }
+
+      /* --- Folder Input Label --- */
+      .folder-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 0.4rem;
+      }
+      #folderNameInput {
+        border-radius: var(--border-radius);
+        background-color: var(--input-bg);
+        border: 1px solid var(--input-border);
+        color: var(--text-primary);
+        box-shadow: var(--shadow-sm);
+      }
+      #folderNameInput::placeholder {
+          color: var(--text-secondary);
+          opacity: 0.7;
+      }
+      #folderNameInput:focus {
+        border-color: var(--input-focus-border);
+        box-shadow: 0 0 0 3px var(--input-focus-shadow);
+        background-color: var(--input-bg);
+      }
+
+      /* --- Base Button Styling (non-icon) --- */
+      .btn:not(.btn-icon) { /* Target buttons that AREN'T icon buttons */
+        border-radius: var(--border-radius);
+        padding: 0.6rem 1rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        border: none;
+        box-shadow: var(--shadow-sm);
+        letter-spacing: 0.2px;
+      }
+      .btn:not(.btn-icon):hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+      }
+      .btn:not(.btn-icon):active {
+        transform: translateY(0px);
+        box-shadow: var(--shadow-sm);
+      }
+      .btn .spinner-border {
+        width: 1.1em;
+        height: 1.1em;
+        border-width: 0.15em;
+      }
+
+      /* Scan Button Styling */
+      .btn-scan {
+        background: linear-gradient(45deg, var(--discord-blurple), #6a79f5);
+        color: white;
+      }
+      .btn-scan:hover {
+        background: linear-gradient(45deg, #4a58d9, #5865f2);
+        color: white;
+      }
+      .btn-scan .button-text { margin-left: 6px; }
+
+      /* Download All Button & Single Download */
+      #downloadAllButton, .btn-download-single:not(.btn-secondary):not(.btn-danger) {
+        background: linear-gradient(45deg, var(--discord-green), #4cc77d);
+        color: white;
+      }
+      #downloadAllButton:hover, .btn-download-single:not(.btn-secondary):not(.btn-danger):hover:not(:disabled) {
+        background: linear-gradient(45deg, #339152, #3ba55d);
+        color: white;
+      }
+      .btn-download-single {
+         font-size: 0.85rem;
+         padding: 0.4rem 0.8rem;
+      }
+
+      /* Status Message Styling */
+      .status-message {
+        font-size: 0.9rem; text-align: center; padding: 0.6rem 0.8rem; border-radius: var(--border-radius); border: 1px solid var(--status-border-light); background-color: var(--status-bg-light); color: var(--status-text-light);
+      }
+      .status-message.alert-success { background-color: var(--status-bg-success); border-color: var(--status-border-success); color: var(--status-text-success); }
+      .status-message.alert-info { background-color: var(--status-bg-info); border-color: var(--status-border-info); color: var(--status-text-info); }
+      .status-message.alert-warning { background-color: var(--status-bg-warning); border-color: var(--status-border-warning); color: var(--status-text-warning); }
+      .status-message.alert-danger { background-color: var(--status-bg-danger); border-color: var(--status-border-danger); color: var(--status-text-danger); }
+
+      /* Download All Section Styling */
+      .download-all-box {
+        margin-top: 1rem; margin-bottom: 1rem; padding: 1rem; border: none; border-radius: var(--border-radius); background-color: var(--bg-secondary); box-shadow: var(--shadow-md);
+      }
+      .clip-count-text {
+        font-size: 0.95rem; color: var(--text-secondary); font-weight: 500;
+      }
+      .clip-count-text strong {
+        color: var(--text-tertiary); font-weight: 700;
+      }
+
+      /* Video List Container */
+      #videoListContainer {
+        position: relative; min-height: 50px; margin-top: 1.25rem; border: none; border-radius: var(--border-radius); overflow: hidden; background-color: var(--bg-secondary); box-shadow: var(--shadow-md);
+      }
+
+      /* Video List Scroll Area */
+      .video-list-scroll { overflow-x: hidden; }
+      .video-list-scroll::-webkit-scrollbar { width: 8px; }
+      .video-list-scroll::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 10px; }
+      .video-list-scroll::-webkit-scrollbar-thumb { background-color: var(--scrollbar-thumb); border-radius: 10px; border: 2px solid var(--scrollbar-track); }
+      .video-list-scroll::-webkit-scrollbar-thumb:hover { background-color: var(--scrollbar-thumb-hover); }
+
+      /* Individual Video List Item Styling */
+      .list-group-item {
+        border: none; border-bottom: 1px solid var(--border-color); padding: 0.75rem 1.1rem; background-color: var(--bg-secondary);
+      }
+      .list-group-item:last-child { border-bottom: none; }
+      .list-group-item:hover {
+        background-color: var(--bg-tertiary); cursor: pointer; transform: translateX(2px);
+      }
+
+      /* Video Thumbnail Styling */
+      .list-group-item video {
+        flex-shrink: 0; object-fit: cover; border-radius: 6px; border: none; box-shadow: 0 1px 3px rgba(var(--shadow-color-rgb), 0.1); background-color: var(--bg-tertiary);
+      }
+       .list-group-item:hover video { transform: scale(1.05); }
+
+      /* Clip Filename Styling */
+      .clip-name {
+        margin-left: 1rem; flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.95rem; font-weight: 500; color: var(--text-primary); vertical-align: middle;
+      }
+
+      /* Individual Download Button States */
+      .btn-download-single.btn-secondary { /* Done state */
+        background: var(--discord-greyple); color: var(--text-primary); opacity: 0.8; cursor: default; box-shadow: none; transform: none;
+      }
+      .btn-download-single.btn-danger { background: #d9534f; color: white; } /* Failed state */
+      .btn-download-single:hover:disabled { transform: none; box-shadow: var(--shadow-sm); }
+
+      /* Loading Overlay Styling */
+      #loadingOverlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--loading-overlay-bg); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 10; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; border-radius: var(--border-radius);
+      }
+      #loadingOverlay.active { opacity: 1; pointer-events: auto; }
+      #loadingOverlay .spinner-border {
+        width: 2.2rem; height: 2.2rem; color: var(--text-tertiary);
+      }
+
+      /* --- Footer Styling --- */
+      .popup-footer {
+        position: fixed; bottom: 0; left: 0; width: 100%; padding: 0.75rem 1.25rem; background-color: var(--footer-bg); border-top: 1px solid var(--footer-border); text-align: center; font-size: 0.8rem; color: var(--footer-text); box-shadow: var(--footer-shadow); z-index: 20;
+      }
+      .popup-footer a {
+        color: var(--text-link); text-decoration: none; font-weight: 500;
+      }
+      .popup-footer a:hover {
+        color: var(--text-link-hover); text-decoration: underline;
+      }
+      .popup-footer .github-icon {
+        display: inline-block; vertical-align: middle; width: 1em; height: 1em; margin-left: 0.3em; fill: currentColor;
+      }
+
+      /* --- Rainbow Text Animation --- */
+      @keyframes rainbowText {
+        0%   { color: hsl(0, 85%, 55%); }    /* Red */
+        14%  { color: hsl(30, 85%, 55%); }   /* Orange */
+        28%  { color: hsl(60, 85%, 55%); }   /* Yellow */
+        42%  { color: hsl(120, 85%, 50%); }  /* Green */
+        57%  { color: hsl(180, 85%, 50%); }  /* Cyan */
+        71%  { color: hsl(240, 85%, 60%); }  /* Blue */
+        85%  { color: hsl(280, 85%, 60%); }  /* Violet */
+        100% { color: hsl(360, 85%, 55%); }  /* Red (completes loop) */
+      }
+      .rainbow-text {
+        animation: rainbowText 6s linear infinite;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Main Container (holds header and content) -->
+    <div class="popup-container">
+
+        <!-- Header Section -->
+        <div class="popup-header">
+            <div class="header-content d-flex justify-content-between align-items-center">
+                <!-- Left Side: Icon + Text -->
+                <div class="header-info d-flex align-items-center">
+                    <img src="icons/icon48.png" alt="Icon" class="header-icon me-2 flex-shrink-0">
+                    <div class="header-text">
+                        <div class="header-title">ClipCord</div>
+                        <div class="header-subtitle">Scan & Download Clips</div>
+                    </div>
+                </div>
+
+                <!-- Right Side: Actions -->
+                <div class="header-actions d-flex align-items-center ms-2">
+                    <!-- Theme Toggle Button -->
+                    <button id="themeToggle" class="btn btn-icon" title="Toggle Theme">
+                        <svg id="themeIconMoon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-moon-stars-fill" viewBox="0 0 16 16">
+                            <path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278"/>
+                            <path d="M10.794 3.148a.217.217 0 0 1 .412 0l.387 1.162h1.212a.178.178 0 0 1 .134.291l-.949.691.387 1.162a.217.217 0 0 1-.316.242l-.949-.691-.949.691a.217.217 0 0 1-.316-.242l.387-1.162-.949-.691a.178.178 0 0 1 .134-.291h1.212l.387-1.162zM13.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.156 1.156 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.156 1.156 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774.258c.346-.115.617-.386.732-.732L13.863.1z"/>
+                        </svg>
+                        <svg id="themeIconSun" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-sun-fill d-none" viewBox="0 0 16 16">
+                            <path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0m0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13m8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5M3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8m10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0m-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0m9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707M4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707"/>
+                        </svg>
+                    </button>
+                    <!-- Refresh Button -->
+                    <button id="refreshScanButton" class="btn btn-icon" title="Rescan Channel">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+                            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+                        </svg>
+                    </button>
+                    <!-- Add other icons (like heart, power) here if needed -->
+                </div>
+            </div>
+        </div>
+        <!-- End Header Section -->
+
+        <!-- Main Content Area -->
+        <div class="popup-content">
+
+            <!-- Folder Input Section -->
+            <div class="mb-3">
+                <label for="folderNameInput" class="form-label folder-label">Download Folder Name:</label>
+                <input type="text" class="form-control form-control-sm" id="folderNameInput" placeholder="DiscordClips"/>
+            </div>
+
+            <!-- Scan Button -->
+            <button id="scanButton" class="btn btn-scan w-100 mb-2">
+                <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                <span class="button-text">Scan Current Channel</span>
+            </button>
+
+            <!-- Status Message Area -->
+            <div id="statusMessage" class="alert status-message mb-2 d-none" role="alert">
+                Click 'Scan' to find clips.
+            </div>
+
+            <!-- Download All Section -->
+            <div id="downloadAllSection" class="d-none text-center download-all-box">
+                <p class="mb-2 clip-count-text">Total Clips Found: <strong id="totalClipCount">0</strong></p>
+                <button id="downloadAllButton" class="btn w-100 btn-sm">Download All</button>
+            </div>
+
+            <!-- Video List Area with Overlay -->
+            <div id="videoListContainer" class="d-none">
+                <!-- The List Itself -->
+                <div id="videoListArea" class="list-group video-list-scroll">
+                    <!-- Video items will be added here by JS -->
+                </div>
+                <!-- Loading Overlay -->
+                <div id="loadingOverlay">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading Previews...</span>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- End .popup-content -->
+
+    </div> <!-- End .popup-container -->
+
+    <!-- Footer Section -->
+    <footer class="popup-footer">
+      <span class="rainbow-text">Developed by chal7z</span>
+      <a
+        href="https://github.com/hygef-v4/Discord_Video_Downloader"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="View on GitHub"
+      >
+        <svg
+          class="github-icon"
+          viewBox="0 0 16 16"
+          version="1.1"
+          aria-hidden="true"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+          ></path>
+        </svg>
+      </a>
+    </footer>
+    <!-- End Footer Section -->
+
+    <!-- Popup JavaScript -->
+    <script src="popup.js"></script>
+  </body>
+</html>
