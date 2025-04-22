@@ -1,6 +1,9 @@
 # ClipCord - Discord Clip Downloader
 
-A simple Chrome extension to scan and download video clips from Discord channels.
+![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue)
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
+![Downloads](https://img.shields.io/badge/downloads-1000+-yellowgreen)
 
 ---
 
@@ -8,34 +11,44 @@ A simple Chrome extension to scan and download video clips from Discord channels
 
 1. **Download & Unzip** the extension code folder.
 2. Open **Chrome** and go to `chrome://extensions/`.
-3. Enable **Developer mode** (toggle at the top-right).
-4. Click **Load unpacked** (top-left).
+3. Enable **Developer mode** (top-right toggle).
+4. Click **Load unpacked** (top-left button).
 5. Select the **unzipped extension folder**.
 
 ---
 
 ## Usage
 
-1. Navigate to a **Discord channel** in Chrome.
-2. Click the **ClipCord icon** in your Chrome toolbar.
-3. *(Optional)* Enter a **folder name** for saving downloads.
-4. Click **Scan Current Channel** or the **Refresh** icon to list clips.
-5. **Hover** over videos to preview.
-6. Click **Download** for individual clips or **Download All** for bulk download.
+1. Open a **Discord channel** in Chrome.
+2. Click the **ClipCord icon** in the toolbar.
+3. *(Optional)* Set a **folder name** for saving downloads.
+4. Click **Scan Current Channel** or the **Refresh** icon.
+5. **Hover** over clips to preview.
+6. Click **Download** for individual clips or **Download All** for bulk downloads.
 
 ---
 
-## Features
+## ⚠️ Notice of Non-Affiliation and Disclaimer
 
-- Scan current Discord channel for video clips.
-- Preview videos before downloading.
-- Download clips one-by-one or all at once.
-- Organize downloads into custom folders.
+ClipCord is **not affiliated**, associated, authorized, endorsed by, or in any way officially connected with **Discord™**, or any of its subsidiaries or affiliates.
+
+The official Discord™ website is: [https://discord.com](https://discord.com)
+
+The name **Discord™**, as well as related names, marks, emblems, and images, are registered trademarks of their respective owners.
+
+---
+
+## License
+
+This project is licensed under the **MIT License**.  
+See the [LICENSE](LICENSE) file for details.
 
 ---
 
-## Note
+## Contributing
 
-This extension is for personal use. Ensure you have permission to download content from the channels you access.
+Want to contribute? Awesome!  
+Feel free to fork the repository, create a new branch, and submit a pull request.
 
 ---
+
