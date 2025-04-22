@@ -21,18 +21,18 @@
       min-height: 50px;
       margin-bottom: 1rem;
     }
-    #videoListArea .list-group-item {
+    #mediaListArea .list-group-item {
       padding: 0.5rem 0.75rem;
       word-break: break-all;
     }
-    #videoListArea .clip-name {
+    #mediaListArea .clip-name {
       flex-grow: 1;
       margin-right: 0.5rem;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    #videoListArea .btn-download-single {
+    #mediaListArea .btn-download-single {
       flex-shrink: 0;
     }
     #downloadAllSection {
@@ -46,17 +46,20 @@
   <div class="container pt-3">
     <h5 class="mb-3">Discord Clip Downloader</h5>
 
-    <!-- Scan Button -->
-    <div class="d-grid gap-2">
-      <button id="scanButton" class="btn btn-primary">
-        Scan Page for Clips
+    <!-- Scan Buttons -->
+    <div class="d-grid gap-2 mb-2">
+      <button id="scanVideoButton" class="btn btn-primary">
+        Scan Page for Videos
+      </button>
+      <button id="scanImageButton" class="btn btn-secondary">
+        Scan Page for Images
       </button>
     </div>
 
-    <!-- 🌟 MOVED Download All Button to Top 🌟 -->
+    <!-- Download All Button -->
     <div id="downloadAllSection" class="d-grid gap-2 d-none">
       <button id="downloadAllButton" class="btn btn-info">
-        Download All Clips (<span id="totalClipCount">0</span>)
+        Download All <span id="mediaTypeLabel">Clips</span> (<span id="totalClipCount">0</span>)
       </button>
     </div>
 
@@ -77,13 +80,13 @@
         <span class="visually-hidden">Loading...</span>
       </div>
       <div id="statusMessage" class="alert alert-light" role="alert" style="margin-bottom: 0;">
-        Click 'Scan' to find clips.
+        Click 'Scan' to find videos or images.
       </div>
     </div>
 
-    <!-- Video List -->
-    <div id="videoListArea" class="list-group d-none">
-      <!-- dynamically injected clip items -->
+    <!-- Media List -->
+    <div id="mediaListArea" class="list-group d-none">
+      <!-- dynamically injected media items -->
     </div>
   </div>
 
