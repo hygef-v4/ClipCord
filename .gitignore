@@ -1,5 +1,5 @@
-# # Ignore the src folder
-# src/
+# Ignore the src folder
+src/
 
 # Allow committing the dist folder
-dist/
+!dist/
