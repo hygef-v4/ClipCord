@@ -1,6 +1,6 @@
 // content-script.js
 (async () => {
-  console.log("Discord Clip Downloader: started");
+  console.log("ClipCord: started");
 
   function sendMessage(msg) {
     chrome.runtime.sendMessage(msg);
