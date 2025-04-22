@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/hygef-v4/Discord_Video_Downloader/blob/main/icons/icon128.png?raw=true" alt="ClipCord Logo" width="128"/>
+</p>
+
 # ClipCord - Discord Clip Downloader
 
 ![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
