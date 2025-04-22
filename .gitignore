@@ -2,4 +2,4 @@
 # src/
 
 # Allow committing the dist folder
-!dist/
+dist/
