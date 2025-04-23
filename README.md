@@ -15,12 +15,12 @@
 ---
 
 ## Installation
-
-1. **Download & Unzip** the extension code folder.
-2. Open **Chrome** and go to `chrome://extensions/`.
-3. Enable **Developer mode** (top-right toggle).
-4. Click **Load unpacked** (top-left button).
-5. Select the **unzipped extension folder**.
+1. First, go to the latest **[release](https://github.com/hygef-v4/ClipCord/releases)** and download the ZIP file.
+2. **Download & Unzip** the extension code folder.
+3. Open **Chrome** and go to `chrome://extensions/`.
+4. Enable **Developer mode** (top-right toggle).
+5. Click **Load unpacked** (top-left button).
+6. Select the **unzipped extension folder**.
 
 ---
 
